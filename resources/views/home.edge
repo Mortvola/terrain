@@ -1,0 +1,128 @@
+@layout('layouts/app')
+
+@section('header')
+	@super
+    <style>
+      :root {
+          --gear-title-color: white;
+          --gear-card-container-bg-color: whitesmoke;
+          --gear-config-title-bg-color: #6c3108;
+          --gear-config-header-bg-color: #c3ac8a;
+          --gear-config-header-color: black;
+          --gear-config-bg-color: #e4dacb;
+          --gear-title-bg-color: #4d5461;
+          --gear-card-color: black;
+          --gear-bg-color: #bec0c5;
+          --gear-color: black;
+          --highlight-color: 0, 0, 255
+      }
+
+      html, body {
+          height: 100%;
+          width: 100%;
+          -webkit-touch-callout: none !important;
+          user-select: none;
+          -webkit-user-select: none;
+      }
+
+      #app {
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden
+      }
+
+      .app {
+          height: 100%;
+          width: 100%;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: max-content minmax(0, 1fr);
+          position: relative;
+      }
+
+      .app .navbar {
+          background-color: #508c00;
+      }
+
+      .app .navbar-nav .nav-link {
+          color: white;
+      }
+
+      .hikes-wrapper {
+          display: grid;
+          grid-template-rows: max-content minmax(0, 1fr);
+          position: relative;
+      }
+
+      .hikes {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: flex-start;
+          align-content: baseline;
+          justify-content: center;
+          overflow: auto;
+          padding-left: 14px;
+          padding-right: 14px;
+      }
+
+      div.hike-card-header {
+          background-color: #733700;
+          color: white;
+      }
+
+      .bpp-shadow {
+          box-shadow: 0 2px 7px 1px rgba(0, 0, 0, 0.3);
+      }
+
+      .map-please-wait {
+          display: flex;
+          height: 100%;
+          width: 100%;
+          align-items: center;
+          justify-content: center;
+          position: absolute;
+          background: rgba(255, 255, 255, 0.5);
+      }
+
+      .map-please-wait-spinner {
+          display: inline-block;
+          width: 8rem;
+          height: 8rem;
+          vertical-align: text-bottom;
+          border: 0.5em solid currentColor;
+          border-right-color: transparent;
+          border-left-color: transparent;
+          border-radius: 50%;
+          -webkit-animation: spinner-border 1.5s linear infinite;
+          animation: spinner-border 1.5s linear infinite;
+      }
+
+      .card {
+          margin: 8px 8px 12px 8px;
+          box-shadow: 0 2px 7px 1px rgba(0, 0, 0, 0.3);
+      }
+
+      .card-header {
+          padding: 8px;
+      }
+
+      .hike-detail {
+          margin-left: 0.5rem;
+      }
+
+      .hike-detail-spinner {
+          color: lightgray;
+          margin-left: 0.5rem;
+      }
+
+      .bpp-shadow {
+          box-shadow: 0 2px 7px 1px rgba(0, 0, 0, 0.3);
+      }
+    </style>
+    @!component('home-css')
+@endsection
+
+@section('content')
+    <div class="app" data-props="{{ JSON.stringify(props) }}" />
+    <script src="/app.js"></script>
+@endsection

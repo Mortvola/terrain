@@ -1,0 +1,64 @@
+{
+  "name": "Terrain",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "client-build": "webpack --config-name app --env production",
+    "dev-client-build": "webpack --config-name app"
+  },
+  "eslintConfig": {
+    "extends": [
+      "plugin:adonis/typescriptApp"
+    ],
+    "plugins": [],
+    "rules": {
+      "semi": "off",
+      "@typescript-eslint/semi": "always"
+    }
+  },
+  "eslintIgnore": [
+    "build"
+  ],
+  "devDependencies": {
+    "@adonisjs/assembler": "^5.9.5",
+    "@japa/preset-adonis": "^1.2.0",
+    "@japa/runner": "^2.2.3",
+    "@types/proxy-addr": "^2.0.0",
+    "@types/react": "^18.0.27",
+    "@types/react-dom": "^18.0.10",
+    "@types/source-map-support": "^0.5.6",
+    "adonis-preset-ts": "^2.1.0",
+    "css-loader": "^6.7.3",
+    "eslint": "^8.33.0",
+    "eslint-plugin-adonis": "^2.1.1",
+    "html-webpack-plugin": "^5.5.0",
+    "mini-css-extract-plugin": "^2.7.2",
+    "pino-pretty": "^9.1.1",
+    "remove-files-webpack-plugin": "^1.5.0",
+    "ts-loader": "^9.4.2",
+    "typescript": "~4.6",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1",
+    "webpack-glsl-loader": "^1.0.1",
+    "youch": "^3.2.3",
+    "youch-terminal": "^2.2.0"
+  },
+  "dependencies": {
+    "@adonisjs/core": "^5.9.0",
+    "@adonisjs/repl": "^3.1.11",
+    "@adonisjs/session": "^6.4.0",
+    "@adonisjs/shield": "^7.1.0",
+    "@adonisjs/view": "^6.2.0",
+    "@mortvola/http": "^0.1.8",
+    "bootstrap": "^5.2.3",
+    "gl-matrix": "^3.4.3",
+    "mobx": "^6.7.0",
+    "mobx-react-lite": "^3.4.0",
+    "proxy-addr": "^2.0.7",
+    "react": "^18.2.0",
+    "react-bootstrap": "^2.7.0",
+    "react-dom": "^18.2.0",
+    "reflect-metadata": "^0.1.13",
+    "source-map-support": "^0.5.21"
+  }
+}

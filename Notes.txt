@@ -1,0 +1,21 @@
+N45W122 (SW) - N48W120 (NE)
+
+The data at the start of the hgt file is SW corner of the file. The last row of the file is the upper left (NW) corner of the area.
+
+
+const x = Math.floor(((lng + 180) * 3600) / (dimension - 1));
+const y = Math.floor(((lat + 180) * 3600) / (dimension - 1));
+
+For the coordinate 45, -122 and a dimension of 128:
+
+x = floor(((-122 + 180) * 3600) / (128 - 1))
+x = floor((58 * 3600) / (128 - 1))
+x = floor(208800 / 127)
+x = 1644
+
+y = floor(((45 + 180) * 3600) / (128 - 1))
+y = floor((225 * 3600) / (128 - 1))
+y = floor(810000 / 127)
+y = 6377
+
+
