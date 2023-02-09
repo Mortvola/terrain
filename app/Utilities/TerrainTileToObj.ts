@@ -1,7 +1,7 @@
 import fs from 'fs';
 
 type Tile = {
-  ele: number[],
+  type: string,
   points: number[],
   normals: number[],
   indices: number[],
@@ -33,10 +33,15 @@ const saveToObj = (tile: Tile): void => {
   fs.writeFileSync('tile.obj', data);
 }
 
-const filename = process.argv[2];
+if (process.argv.length < 3) {
+  console.log(`usage: ts-node TerrainTileToObj.ts <filename>`)
+}
+else {
+  const filename = process.argv[2];
 
-const json = fs.readFileSync(filename, { encoding: 'utf8' });
-
-const terrain = JSON.parse(json.toString());
-
-saveToObj(terrain);
+  const json = fs.readFileSync(filename, { encoding: 'utf8' });
+  
+  const terrain = JSON.parse(json.toString());
+  
+  saveToObj(terrain);  
+}

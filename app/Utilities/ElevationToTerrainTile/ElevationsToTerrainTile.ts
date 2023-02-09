@@ -92,12 +92,6 @@ class ElevationsToTerrainTile {
   
     // addRoutes(southLat, westLng, northLat, eastLng);
   
-    // Json::Value terrain = Json::objectValue;
-    // terrain["type"] = "triangles";
-    // terrain["points"] = vectorToJson(this.points);
-    // terrain["normals"] = vectorToJson(m_normals);
-    // terrain["indices"] = vectorToJson(this.indices);
-  
     const terrain = {
       type: 'triangles',
       points: this.points,
@@ -105,25 +99,12 @@ class ElevationsToTerrainTile {
       indices: this.indices,
     }
 
-    // Json::Value objectArray = Json::arrayValue;
-    // objectArray.append(terrain);
-  
-    // Json::Value data = Json::objectValue;
-    // data["ele"] = vector2dToJson(ele.points);
-    // data["xDimension"] = xDimension;
-    // data["yDimension"] = yDimension;
-    // data["objects"] = objectArray;
     const data = {
       ele: ele.points,
       xDimension,
       yDimension,
       objects: [terrain]
     }
-  
-    // Json::FastWriter fastWriter;
-    // std::string output = fastWriter.write(data);
-  
-    // result.push(m_layer->saveTile(m_x, m_y, m_dimension, output));
   
     return data;
   }
