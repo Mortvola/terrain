@@ -2,7 +2,7 @@ import { vec3 } from 'gl-matrix';
 import LatLng from '../../../client-web/LatLng';
 import File, { TILE_FILE_DIMENSION } from "./File";
 
-const terrainVertexStride = 5;
+const terrainVertexStride = 5; // 3 values for the vertex coordinates, 2 for the texutre coordinates
 
 const files: Map<string, File> = new Map();
 
@@ -87,7 +87,6 @@ class ElevationsToTerrainTile {
       throw new Error('elevations not loaded');
     }
   
-    console.log(ele.centers?.length)
     this.create(ele, xDimension, yDimension);
   
     // addRoutes(southLat, westLng, northLat, eastLng);
@@ -321,7 +320,7 @@ class ElevationsToTerrainTile {
     const numPointsY = ele.points.length;
   
     this.createTerrainPoints(ele, numPointsX, numPointsY, xDimension, yDimension);
-    this.createTerrainIndices(numPointsX, numPointsY);
+    this.createTerrainFaces(numPointsX, numPointsY);
     this.createTerrainNormals(numPointsX, numPointsY);
   }
 
@@ -393,26 +392,32 @@ class ElevationsToTerrainTile {
     }
   }
 
-  createTerrainIndices(
+  createTerrainFaces(
     numPointsX: number,
     numPointsY: number,
   ) {
     for (let i = 0; i < numPointsX - 1; i += 1) {
-      this.indices.push(i);
-      this.indices.push(i + 1);
-      this.indices.push(numPointsX + i * 2 + 1); // center
+      const point1 = i;
+      const point2 = i + 1;
+      const point3 = numPointsX + i * 2 + 2;
+      const point4 = numPointsX + i * 2 + 0;
+      const center = numPointsX + i * 2 + 1;
+
+      this.indices.push(point1);
+      this.indices.push(point2);
+      this.indices.push(center); // center
   
-      this.indices.push(i + 1);
-      this.indices.push(numPointsX + i * 2 + 2);
-      this.indices.push(numPointsX + i * 2 + 1); // center
+      this.indices.push(point2);
+      this.indices.push(point3);
+      this.indices.push(center); // center
   
-      this.indices.push(numPointsX + i * 2 + 2);
-      this.indices.push(numPointsX + i * 2 + 0);
-      this.indices.push(numPointsX + i * 2 + 1); // center
+      this.indices.push(point3);
+      this.indices.push(point4);
+      this.indices.push(center); // center
   
-      this.indices.push(numPointsX + i * 2 + 0);
-      this.indices.push(i);
-      this.indices.push(numPointsX + i * 2 + 1); // center
+      this.indices.push(point4);
+      this.indices.push(point1);
+      this.indices.push(center); // center
     }
   
     const firstRowOffset = numPointsX;
@@ -420,53 +425,52 @@ class ElevationsToTerrainTile {
   
     for (let j = 1; j < numPointsY - 1; j += 1) {
       for (let i = 0; i < numPointsX - 1; i += 1) {
-        this.indices.push(firstRowOffset + numRowPoints * (j - 1) + i * 2 + 0);
-        this.indices.push(firstRowOffset + numRowPoints * (j - 1) + i * 2 + 2);
-        this.indices.push(firstRowOffset + numRowPoints * (j + 0) + i * 2 + 1);
+        const point1 = firstRowOffset + numRowPoints * (j - 1) + i * 2 + 0;
+        const point2 = firstRowOffset + numRowPoints * (j - 1) + i * 2 + 2;
+        const point3 = firstRowOffset + numRowPoints * (j + 0) + i * 2 + 2;
+        const point4 = firstRowOffset + numRowPoints * (j + 0) + i * 2 + 0;
+        const center = firstRowOffset + numRowPoints * (j + 0) + i * 2 + 1;
+
+        this.indices.push(point1);
+        this.indices.push(point2);
+        this.indices.push(center);
   
-        this.indices.push(firstRowOffset + numRowPoints * (j - 1) + i * 2 + 2);
-        this.indices.push(firstRowOffset + numRowPoints * (j + 0) + i * 2 + 2);
-        this.indices.push(firstRowOffset + numRowPoints * (j + 0) + i * 2 + 1);
+        this.indices.push(point2);
+        this.indices.push(point3);
+        this.indices.push(center);
   
-        this.indices.push(firstRowOffset + numRowPoints * (j + 0) + i * 2 + 2);
-        this.indices.push(firstRowOffset + numRowPoints * (j + 0) + i * 2 + 0);
-        this.indices.push(firstRowOffset + numRowPoints * (j + 0) + i * 2 + 1);
+        this.indices.push(point3);
+        this.indices.push(point4);
+        this.indices.push(center);
   
-        this.indices.push(firstRowOffset + numRowPoints * (j + 0) + i * 2 + 0);
-        this.indices.push(firstRowOffset + numRowPoints * (j - 1) + i * 2 + 0);
-        this.indices.push(firstRowOffset + numRowPoints * (j + 0) + i * 2 + 1);
+        this.indices.push(point4);
+        this.indices.push(point1);
+        this.indices.push(center);
       }
     }
   }
 
-  computeNormal(
-    positions: number[],
-    indices: number[],
-    index: number
-  ): vec3 {
+  computeFaceNormal(index: number): vec3 {
+    const index1 = this.indices[index] * terrainVertexStride;
+    const index2 = this.indices[index + 1] * terrainVertexStride;
+    const index3 = this.indices[index + 2] * terrainVertexStride;
+
     const v1 = vec3.fromValues(
-      positions[indices[index + 2] * terrainVertexStride + 0]
-        - positions[indices[index + 1] * terrainVertexStride + 0],
-      positions[indices[index + 2] * terrainVertexStride + 1]
-        - positions[indices[index + 1] * terrainVertexStride + 1],
-      positions[indices[index + 2] * terrainVertexStride + 2]
-      - positions[indices[index + 1] * terrainVertexStride + 2]
+      this.points[index3 + 0] - this.points[index2 + 0],
+      this.points[index3 + 1] - this.points[index2 + 1],
+      this.points[index3 + 2] - this.points[index2 + 2]
     );
   
     const v2 = vec3.fromValues(
-      positions[indices[index] * terrainVertexStride + 0]
-        - positions[indices[index + 1] * terrainVertexStride + 0],
-      positions[indices[index] * terrainVertexStride + 1]
-        - positions[indices[index + 1] * terrainVertexStride + 1],
-      positions[indices[index] * terrainVertexStride + 2]
-        - positions[indices[index + 1] * terrainVertexStride + 2]
+      this.points[index1 + 0] - this.points[index2 + 0],
+      this.points[index1 + 1] - this.points[index2 + 1],
+      this.points[index1 + 2] - this.points[index2 + 2]
     );
   
     let normal = vec3.fromValues(0, 0, 0);
     normal = vec3.cross(normal, v1, v2);
-    normal = vec3.normalize(normal, normal);
   
-    return normal;
+    return vec3.normalize(normal, normal);
   }
   
   createTerrainNormals(
@@ -474,8 +478,10 @@ class ElevationsToTerrainTile {
     numPointsY: number,
   ) {
     // Create a normal for each face
-    
     const faceNormals: vec3[] = [];
+    for (let i = 0; i < this.indices.length; i += 3) {
+      faceNormals.push(this.computeFaceNormal(i));
+    }
   
     const sumNormals = (indexes: number[]): vec3 => {
       const vec = [0, 0, 0];
@@ -486,10 +492,9 @@ class ElevationsToTerrainTile {
         vec[2] += faceNormals[indexes[i]][2];
       }
   
-      let normal = vec3.fromValues(vec[0], vec[1], vec[2]);
-      normal = vec3.normalize(normal, normal);
+      const normal = vec3.fromValues(vec[0], vec[1], vec[2]);
   
-      return normal; // vec3.fromValues(normal[0], normal[1], normal[2]);
+      return vec3.normalize(normal, normal);
     };
   
     const concatNormal = (n: vec3) => {
@@ -498,99 +503,126 @@ class ElevationsToTerrainTile {
       this.normals.push(n[2]);
     };
   
-    for (let i = 0; i < this.indices.length; i += 3) {
-      faceNormals.push(this.computeNormal(this.points, this.indices, i));
-    }
-  
     // Sum the face normals that share a vertex
   
+    let lastRow = numPointsY - 2;
+    let lastCell = (numPointsX - 2) * 4;
+
     // first row
   
     concatNormal(sumNormals([0, 3]));
   
-    for (let i = 4; i < (numPointsX - 1) * 4; i += 4) {
-      concatNormal(sumNormals([i - 1, i + 3, i + 6, i]));
+    for (let i = 0; i < lastCell; i += 4) {
+      concatNormal(sumNormals([i, i + 1, i + 7, i + 4]));
     }
   
-    concatNormal(sumNormals([(numPointsX - 1) * 4, (numPointsX - 1) * 4 + 1]));
+    concatNormal(sumNormals([lastCell, lastCell + 1]));
   
     // interior
   
-    for (let j = 1; j < numPointsY - 1; j += 1) {
+    for (let j = 0; j < lastRow; j += 1) {
+      const row0Index = j * (numPointsX - 1) * 4;
+      const row1Index = (j + 1) * (numPointsX - 1) * 4;
+
+      const faceNormalIndexA = row0Index + 3;
+      const faceNormalIndexB = row0Index + 2;
+      const faceNormalIndexC = row1Index + 0;
+      const faceNormalIndexD = row1Index + 3;
+
       concatNormal(sumNormals([
-        (j - 1) * (numPointsX - 1) * 4 + 3,
-        (j - 1) * (numPointsX - 1) * 4 + 2,
-        (j + 0) * (numPointsX - 1) * 4 + 0,
-        (j + 0) * (numPointsX - 1) * 4 + 3
+        faceNormalIndexA,
+        faceNormalIndexB,
+        faceNormalIndexC,
+        faceNormalIndexD
       ]));
   
-      for (let i = 1; i < numPointsX - 1; i += 1) {
+      for (let i = 0; i < lastCell; i += 4) {
+        const row0Index2 = row0Index + i;
+        const row1Index2 = row1Index + i;
+
+        const faceNormalIndex0 = row0Index2 + 0;
+        const faceNormalIndex1 = row0Index2 + 1;
+        const faceNormalIndex2 = row0Index2 + 2;
+        const faceNormalIndex3 = row0Index2 + 3;
+        const faceNormalIndex6 = row0Index2 + 6;
+        const faceNormalIndex7 = row0Index2 + 7;
+
+        const faceNormalIndex12 = row1Index2 + 0;
+        const faceNormalIndex13 = row1Index2 + 1;
+        const faceNormalIndex16 = row1Index2 + 4;
+        const faceNormalIndex19 = row1Index2 + 7;
+
         concatNormal(sumNormals([
-          (j - 1) * (numPointsX - 1) * 4 + i * 4 - 1,
-          (j - 1) * (numPointsX - 1) * 4 + i * 4 - 2,
-          (j - 1) * (numPointsX - 1) * 4 + i * 4 - 3,
-          (j - 1) * (numPointsX - 1) * 4 + i * 4 - 4
+          faceNormalIndex0,
+          faceNormalIndex1,
+          faceNormalIndex2,
+          faceNormalIndex3
         ]));
   
         concatNormal(sumNormals([
-          (j - 1) * (numPointsX - 1) * 4 + i * 4 - 2,
-          (j - 1) * (numPointsX - 1) * 4 + i * 4 - 3,
-          (j - 1) * (numPointsX - 1) * 4 + i * 4 + 3,
-          (j - 1) * (numPointsX - 1) * 4 + i * 4 + 2,
-          (j + 0) * (numPointsX - 1) * 4 + i * 4 - 4,
-          (j + 0) * (numPointsX - 1) * 4 + i * 4 - 3,
-          (j + 0) * (numPointsX - 1) * 4 + i * 4 + 0,
-          (j + 0) * (numPointsX - 1) * 4 + i * 4 + 3
+          faceNormalIndex1,
+          faceNormalIndex2,
+          faceNormalIndex7,
+          faceNormalIndex6,
+          faceNormalIndex16,
+          faceNormalIndex19,
+          faceNormalIndex13,
+          faceNormalIndex12
         ]));
       }
   
+      const row0Index3 = row0Index + lastCell;
+      const row1Index3 = row1Index + lastCell;
+
       concatNormal(sumNormals([
-        (j - 1) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 1,
-        (j - 1) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 2,
-        (j - 1) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 3,
-        (j - 1) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 4
+        row0Index3 + 0,
+        row0Index3 + 1,
+        row0Index3 + 2,
+        row0Index3 + 3
       ]));
   
       concatNormal(sumNormals([
-        (j - 1) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 2,
-        (j - 1) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 3,
-        (j + 0) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 4,
-        (j + 0) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 3
+        row0Index3 + 1,
+        row0Index3 + 2,
+        row1Index3 + 0,
+        row1Index3 + 1
       ]));
     }
   
+    const lastRowIndex = lastRow * (numPointsX - 1) * 4;
+
     // last row
     concatNormal(sumNormals([
-      (numPointsY - 2) * (numPointsX - 1) * 4 + 2,
-      (numPointsY - 2) * (numPointsX - 1) * 4 + 3
+      lastRowIndex + 2,
+      lastRowIndex + 3
     ]));
   
-    for (let i = 1; i < numPointsX - 1; i += 1) {
+    for (let i = 0; i < lastCell; i += 4) {
       concatNormal(sumNormals([
-        (numPointsY - 2) * (numPointsX - 1) * 4 + i * 4 - 1,
-        (numPointsY - 2) * (numPointsX - 1) * 4 + i * 4 - 2,
-        (numPointsY - 2) * (numPointsX - 1) * 4 + i * 4 - 3,
-        (numPointsY - 2) * (numPointsX - 1) * 4 + i * 4 - 4
+        lastRowIndex + i + 0,
+        lastRowIndex + i + 1,
+        lastRowIndex + i + 2,
+        lastRowIndex + i + 3
       ]));
   
       concatNormal(sumNormals([
-        (numPointsY - 2) * (numPointsX - 1) * 4 + i * 4 - 2,
-        (numPointsY - 2) * (numPointsX - 1) * 4 + i * 4 - 3,
-        (numPointsY - 2) * (numPointsX - 1) * 4 + i * 4 + 3,
-        (numPointsY - 2) * (numPointsX - 1) * 4 + i * 4 + 2
+        lastRowIndex + i + 2,
+        lastRowIndex + i + 1,
+        lastRowIndex + i + 7,
+        lastRowIndex + i + 6
       ]));
     }
   
     concatNormal(sumNormals([
-      (numPointsY - 2) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 1,
-      (numPointsY - 2) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 2,
-      (numPointsY - 2) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 3,
-      (numPointsY - 2) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 4
+      lastRowIndex + lastCell + 0,
+      lastRowIndex + lastCell + 1,
+      lastRowIndex + lastCell + 2,
+      lastRowIndex + lastCell + 3
     ]));
   
     concatNormal(sumNormals([
-      (numPointsY - 2) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 2,
-      (numPointsY - 2) * (numPointsX - 1) * 4 + ((numPointsX - 1) * 4) - 3
+      lastRowIndex + lastCell + 1,
+      lastRowIndex + lastCell + 2
     ]));
   }
 }
