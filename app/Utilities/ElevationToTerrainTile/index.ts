@@ -32,10 +32,12 @@ if (process.argv[2] === 'range') {
   const dimension = parseInt(process.argv[7], 10);
 
   let [startX, startY] = latLngToTerrainTile(startLat, startLng, dimension);
-  startX += 1;
-  startY += 1;
+  startX += 2;
+  startY += 2;
 
-  const [endX, endY] = latLngToTerrainTile(endLat, endLng, dimension);
+  let [endX, endY] = latLngToTerrainTile(endLat, endLng, dimension);
+  endX -= 1;
+  endY -= 1;
 
   for (let y = startY; y < endY; y += 1) {
     for (let x = startX; x < endX; x += 1) {

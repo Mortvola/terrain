@@ -3,6 +3,7 @@ import LatLng from '../../../client-web/LatLng';
 import File, { TILE_FILE_DIMENSION } from "./File";
 
 const terrainVertexStride = 5; // 3 values for the vertex coordinates, 2 for the texutre coordinates
+const normalStride = 3
 
 const files: Map<string, File> = new Map();
 
@@ -43,6 +44,8 @@ class ElevationsToTerrainTile {
 
   dimension: number;
 
+  padding = 1; // the amount of padding on each side of a tile for computing edge normals.
+
   points: number[] = [];
 
   indices: number[] = [];
@@ -58,35 +61,57 @@ class ElevationsToTerrainTile {
   render() {
     const latLngPerPoint = 1 / TILE_FILE_DIMENSION;
 
-    const westEdge = this.x * (this.dimension - 1);
-    const eastEdge = westEdge + (this.dimension - 1);
+    let westEdge = this.x * (this.dimension - 1);
+    let eastEdge = westEdge + this.dimension;
+    westEdge -= this.padding;
+    eastEdge += this.padding;
+
     const westLng = westEdge * latLngPerPoint - 180;
     const eastLng = eastEdge * latLngPerPoint - 180;
   
-    const southEdge = this.y * (this.dimension - 1);
-    const northEdge = southEdge + (this.dimension - 1);
+    let southEdge = this.y * (this.dimension - 1);
+    let northEdge = southEdge + this.dimension;
+    southEdge -= this.padding;
+    northEdge += this.padding;
+  
     const southLat = southEdge * latLngPerPoint - 180;
     const northLat = northEdge * latLngPerPoint - 180;
+
+    // const sw = terrainTileToLatLng(this.x, this.y, this.dimension);
+    // const westLng = sw.lng - latLngPerPoint;
+    // const southLat = sw.lat - latLngPerPoint;
+    // console.log(`${sw.lat}, ${sw.lng}`);
+
+    // const ne = terrainTileToLatLng(this.x + 1, this.y + 1, this.dimension);
+    // const eastLng = ne.lng + latLngPerPoint;
+    // const northLat = ne.lat + latLngPerPoint;
+    // console.log(`${ne.lat}, ${ne.lng}`);
+
+    const ele = this.getElevationTile(westEdge, eastEdge, southEdge, northEdge, southLat, westLng, northLat, eastLng);
+  
+    if (ele === undefined) {
+      throw new Error('elevations not loaded');
+    }
   
     let westMercator: number;
     let southMercator: number;
     let eastMercator: number;
     let northMercator: number;
   
-    [westMercator, southMercator] = ElevationsToTerrainTile.latLngToMercator(southLat, westLng);
-    [eastMercator, northMercator] = ElevationsToTerrainTile.latLngToMercator(northLat, eastLng);
+    [westMercator, southMercator] = ElevationsToTerrainTile.latLngToMercator(
+      southLat,
+      westLng,
+    );
+    [eastMercator, northMercator] = ElevationsToTerrainTile.latLngToMercator(
+      northLat,
+      eastLng,
+    );
   
     const xDimension = eastMercator - westMercator;
     const yDimension = northMercator - southMercator;
 
     console.log(`xDimension: ${xDimension}, yDimension: ${yDimension}`)
 
-    const ele = this.getElevationTile(southLat, westLng, northLat, eastLng);
-  
-    if (ele === undefined) {
-      throw new Error('elevations not loaded');
-    }
-  
     this.create(ele, xDimension, yDimension);
   
     // addRoutes(southLat, westLng, northLat, eastLng);
@@ -98,18 +123,20 @@ class ElevationsToTerrainTile {
       indices: this.indices,
     }
 
+    const firstRowLastValue = (this.dimension - 1) * terrainVertexStride + 0;
+    const lastRowFirstValue = ((this.dimension - 2) * (this.dimension * 2 - 1) + this.dimension) * terrainVertexStride + 1;
+  
     const data = {
       ele: ele.points,
-      xDimension,
-      yDimension,
+      xDimension: this.points[firstRowLastValue] - this.points[0],
+      yDimension: this.points[lastRowFirstValue] - this.points[1],
       objects: [terrain]
     }
   
     return data;
   }
 
-  static latLngToMercator(lat: number, lng: number): number[]
-  {
+  static latLngToMercator(lat: number, lng: number): number[] {
     const degToRad = (d: number) => (
       (d / 180.0) * Math.PI
     );
@@ -135,17 +162,21 @@ class ElevationsToTerrainTile {
   }
 
   getElevationTile(
+    westEdge: number,
+    eastEdge: number,
+    southEdge: number,
+    northEdge: number,
     southLat: number,
     westLng: number,
     northLat: number,
     eastLng: number
   ): Elevations | undefined {
     try {
-      const westEdge = this.x * (this.dimension - 1);
-      const eastEdge = westEdge + (this.dimension - 1);
+      // const westEdge = this.x * (this.dimension - 1 + this.padding);
+      // const eastEdge = westEdge + (this.dimension - 1 + this.padding);
   
-      const southEdge = this.y * (this.dimension - 1);
-      const northEdge = southEdge + (this.dimension - 1);
+      // const southEdge = this.y * (this.dimension - 1 + this.padding);
+      // const northEdge = southEdge + (this.dimension - 1 + this.padding);
   
       const latMin = Math.floor(southLat);
       const latMax = Math.ceil(northLat);
@@ -195,12 +226,13 @@ class ElevationsToTerrainTile {
             }
           }
   
-          for (let j = startY; j <= endY; j++) {
+          for (let j = startY; j < endY; j++) {
             if (yy >= points.length) {
               points.push([]);
             }
             
-            for (let i = startX * 2; i <= endX * 2; i += 2) {
+            // Increment by two because the data is read as bytes in pairs to get 16 bit values.
+            for (let i = startX * 2; i < endX * 2; i += 2) {
               points[yy].push(file.data(i, j));
             }
   
@@ -209,7 +241,7 @@ class ElevationsToTerrainTile {
         }
       }
   
-      const centersDimension = this.dimension - 1;
+      const centersDimension = points[0].length - 1;
       const centers: number[][] = Array<Array<number>>().fill([], 0, centersDimension);
   
       for (let j = 0; j < centersDimension; j++) {
@@ -322,6 +354,116 @@ class ElevationsToTerrainTile {
     this.createTerrainPoints(ele, numPointsX, numPointsY, xDimension, yDimension);
     this.createTerrainFaces(numPointsX, numPointsY);
     this.createTerrainNormals(numPointsX, numPointsY);
+
+    if (this.padding) {
+      this.depad(ele);
+    }
+  }
+
+  depad(ele: Elevations) {
+    // depad points and normals
+    const newPoints: number[] = [];
+    const newNormals: number[] = [];
+
+    // Padding on top row is one on each side of the row
+    // Padding on subsequent rows is two on each side of the row.
+    // So, for this first row it padding * 2 (for top row) + padding * 2 (for the left side of the next row) 
+    let offset = this.dimension + this.padding * 4;
+
+    // Increment by 2 to skip the center vertices
+    for (let x = 0; x < this.dimension * 2 - 1; x += 2) {
+      // face coordinates
+      newPoints.push(this.points[(offset + x) * terrainVertexStride + 0]);
+      newPoints.push(this.points[(offset + x) * terrainVertexStride + 1]);
+      newPoints.push(this.points[(offset + x) * terrainVertexStride + 2]);
+
+      // texture coordinates
+      newPoints.push(this.points[(offset + x) * terrainVertexStride + 3]);
+      newPoints.push(this.points[(offset + x) * terrainVertexStride + 4]);
+
+      // noramls
+      newNormals.push(this.normals[(offset + x) * normalStride + 0]);
+      newNormals.push(this.normals[(offset + x) * normalStride + 1]);
+      newNormals.push(this.normals[(offset + x) * normalStride + 2]);
+    }
+
+    const stride = this.dimension * 2 - 1 + this.padding * 4;
+    offset += stride;
+
+    for (let y = 0; y < this.dimension - 1; y += 1) {
+      for (let x = 0; x < this.dimension * 2 - 1; x += 1) {
+        // face coordinates
+        newPoints.push(this.points[(offset + x) * terrainVertexStride + 0]);
+        newPoints.push(this.points[(offset + x) * terrainVertexStride + 1]);
+        newPoints.push(this.points[(offset + x) * terrainVertexStride + 2]);
+  
+        // texture coordinates
+        newPoints.push(this.points[(offset + x) * terrainVertexStride + 3]);
+        newPoints.push(this.points[(offset + x) * terrainVertexStride + 4]);
+
+        // noramls
+        newNormals.push(this.normals[(offset + x) * normalStride + 0]);
+        newNormals.push(this.normals[(offset + x) * normalStride + 1]);
+        newNormals.push(this.normals[(offset + x) * normalStride + 2]);
+      }   
+      
+      offset += stride;
+    }
+
+    console.log(newPoints.length);
+    this.points = newPoints;
+    this.normals = newNormals;
+    
+    this.indices = [];
+    this.createTerrainFaces(this.dimension, this.dimension);
+
+    // depad the elevation points.
+    const newElePoints: number[][] = [
+      ...ele.points.slice(1, ele.points.length - 1)
+    ];
+
+    for (let y = 0; y < this.dimension; y += 1) {
+      newElePoints[y] = [
+        ...newElePoints[y].slice(1, newElePoints[y].length - 1)
+      ]
+    }
+
+    ele.points = newElePoints;
+
+    // Depad faces
+    // const newIndices: number[] = [];
+
+    // offset = (this.dimension + 2) * 4;
+    // let pointOffset = this.dimension + this.padding + 2;
+    // const faceStride = 3;
+
+    // for (let x = 0; x < this.dimension - 1; x += 1) {
+    //   const point1 = this.indices[(offset + 0) * faceStride] - (pointOffset + 1 * x) * terrainVertexStride;
+    //   const point2 = this.indices[(offset + 1) * faceStride] - (pointOffset + 1 * (x + 1)) * terrainVertexStride;
+    //   const point3 = this.indices[offset + this.dimension * 2 + 5] - (pointOffset + this.dimension + 1) * terrainVertexStride;
+    //   const point4 = this.indices[offset + this.dimension * 2 + 3] - (pointOffset + this.dimension + 1) * terrainVertexStride;
+    //   const center = this.indices[offset + this.dimension * 2 + 4] - (pointOffset + this.dimension + 1) * terrainVertexStride;
+
+    //   // face 0
+    //   newIndices.push(point1);
+    //   newIndices.push(point2);
+    //   newIndices.push(center);
+
+    //   // face 1
+    //   newIndices.push(point2);
+    //   newIndices.push(point3);
+    //   newIndices.push(center);
+
+    //   // face 2
+    //   newIndices.push(point3);
+    //   newIndices.push(point4);
+    //   newIndices.push(center);
+
+    //   // face 3
+    //   newIndices.push(point4);
+    //   newIndices.push(point1);
+    //   newIndices.push(center);
+    // }
   }
 
   createTerrainPoints(
