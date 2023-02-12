@@ -8,7 +8,7 @@ import TerrainShader from './Shaders/TerrainShader';
 import PhotoShader from './Shaders/PhotoShader';
 import Photo from './Photo';
 import { PhotoInterface } from '../PhotoInterface';
-import CubeMap from './Skybox';
+import Skybox from './Skybox';
 
 type Tile = {
   offset: { x: number, y: number},
@@ -94,7 +94,7 @@ class TerrainRenderer implements TerrainRendererInterface {
 
   scale = 1;
 
-  skybox: CubeMap;
+  skybox: Skybox;
 
   constructor(
     gl: WebGL2RenderingContext,
@@ -126,7 +126,7 @@ class TerrainRenderer implements TerrainRendererInterface {
 
     this.photoShader = new PhotoShader(this.gl);
 
-    this.skybox = new CubeMap(this.gl);
+    this.skybox = new Skybox(this.gl);
 
     this.initialize();
   }
@@ -155,7 +155,7 @@ class TerrainRenderer implements TerrainRendererInterface {
     // the fog.
     const { tile } = this.tileGrid[tilePadding][tilePadding];
     const fogFar = (tile?.xDimension ?? 1) * tilePadding;
-    this.fogNormalizationFactor = 0; // 1 / (2 ** (fogFar * (Math.LOG2E / 4096.0)) - 1.0);
+    // this.fogNormalizationFactor =  1 / (2 ** (fogFar * (Math.LOG2E / 4096.0)) - 1.0);
   }
 
   initTileGrid(): void {
