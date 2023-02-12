@@ -19,13 +19,6 @@ class File {
     const buffer = fs.readFileSync(this.filename);
 
     this.buffer = new DataView(buffer.buffer)
-    // console.log(`${buffer[0]}, ${buffer[1]}, ${buffer[2]}, ${buffer[3]}`)
-
-    // for(let i = 0; i < 100; i += 2) {
-    //   console.log(`${this.buffer.getUint16(i, false)}`)
-    // }
-
-    // console.log('end')
   }
 
   data(x: number, y: number): number {
