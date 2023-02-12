@@ -700,8 +700,10 @@ class TerrainRenderer implements TerrainRendererInterface {
   }
 
   getViewMatrix(): mat4 {
-    const cameraOffset = vec3.multiply(
-      vec3.create(),
+    const cameraOffset = vec3.create()
+    
+    vec3.multiply(
+      cameraOffset,
       this.cameraOffset,
       vec3.fromValues(this.scale, this.scale, 1),
     );
@@ -712,8 +714,10 @@ class TerrainRenderer implements TerrainRendererInterface {
       this.cameraFront[2] + cameraOffset[2],
     );
 
-    const cameraUp = vec3.rotateX(
-      vec3.create(),
+    const cameraUp = vec3.create();
+    
+    vec3.rotateX(
+      cameraUp,
       vec3.fromValues(0.0, 0.0, 1.0),
       vec3.create(),
       degToRad(0.7),
