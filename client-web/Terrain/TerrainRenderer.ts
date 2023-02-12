@@ -1,4 +1,4 @@
-import { vec3, mat4 } from 'gl-matrix';
+import { vec3, mat4, vec4 } from 'gl-matrix';
 import TerrainTile, { TerrainRendererInterface, Location, tileDimension } from './TerrainTile';
 import LatLng from '../LatLng';
 import {
@@ -8,6 +8,7 @@ import TerrainShader from './Shaders/TerrainShader';
 import PhotoShader from './Shaders/PhotoShader';
 import Photo from './Photo';
 import { PhotoInterface } from '../PhotoInterface';
+import CubeMap from './Skybox';
 
 type Tile = {
   offset: { x: number, y: number},
@@ -55,6 +56,8 @@ class TerrainRenderer implements TerrainRendererInterface {
 
   fogNormalizationFactor = 0;
 
+  fogColor: vec4 = [1.0, 1.0, 1.0, 1.0];
+
   terrainShader: TerrainShader;
 
   photoShader: PhotoShader;
@@ -91,6 +94,8 @@ class TerrainRenderer implements TerrainRendererInterface {
 
   scale = 1;
 
+  skybox: CubeMap;
+
   constructor(
     gl: WebGL2RenderingContext,
     position: LatLng,
@@ -115,12 +120,13 @@ class TerrainRenderer implements TerrainRendererInterface {
     this.gl.clearColor(1.0, 1.0, 1.0, 1.0);
     this.gl.clearDepth(1.0); // Clear everything
     this.gl.enable(this.gl.DEPTH_TEST); // Enable depth testing
-    this.gl.depthFunc(this.gl.LEQUAL); // Near things obscure far things
     this.gl.enable(this.gl.CULL_FACE);
 
     this.terrainShader = new TerrainShader(this.gl);
 
     this.photoShader = new PhotoShader(this.gl);
+
+    this.skybox = new CubeMap(this.gl);
 
     this.initialize();
   }
@@ -138,6 +144,7 @@ class TerrainRenderer implements TerrainRendererInterface {
     this.lookAtPhoto();
 
     await this.loadTiles(x, y);
+    await this.skybox.load();
 
     this.initCamera(x, y, latLngCenter);
     this.updatePhotoElevation(x, y, latLngCenter);
@@ -148,7 +155,7 @@ class TerrainRenderer implements TerrainRendererInterface {
     // the fog.
     const { tile } = this.tileGrid[tilePadding][tilePadding];
     const fogFar = (tile?.xDimension ?? 1) * tilePadding;
-    this.fogNormalizationFactor = 1 / (2 ** (fogFar * (Math.LOG2E / 4096.0)) - 1.0);
+    this.fogNormalizationFactor = 0; // 1 / (2 ** (fogFar * (Math.LOG2E / 4096.0)) - 1.0);
   }
 
   initTileGrid(): void {
@@ -575,6 +582,7 @@ class TerrainRenderer implements TerrainRendererInterface {
     // eslint-disable-next-line no-bitwise
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     this.gl.enable(this.gl.DEPTH_TEST); // Enable depth testing
+    this.gl.depthFunc(this.gl.LESS); // Near things obscure far things
     this.gl.disable(this.gl.BLEND);
 
     this.drawTerrain(projectionMatrix, viewMatrix);
@@ -582,6 +590,8 @@ class TerrainRenderer implements TerrainRendererInterface {
     if (!capturePhoto) {
       this.drawPhoto(projectionMatrix, viewMatrix);
     }
+
+    this.skybox.draw(projectionMatrix, viewMatrix);
   }
 
   drawTerrain(
@@ -592,31 +602,16 @@ class TerrainRenderer implements TerrainRendererInterface {
       const lightVector = vec3.fromValues(0, -1, -1);
       vec3.normalize(lightVector, lightVector);
 
+      this.terrainShader.use();
+      this.terrainShader.setProjection(projectionMatrix);
+      this.terrainShader.setView(viewMatrix);
+      this.terrainShader.setLightVector(lightVector);
+      this.terrainShader.setFog(this.fogColor, this.fogNormalizationFactor)
+
       this.tileRenderOrder.forEach((order) => {
         const { tile, offset } = this.tileGrid[order.y][order.x];
 
         if (tile) {
-          this.gl.useProgram(this.terrainShader.shaderProgram);
-
-          this.gl.uniformMatrix4fv(
-            this.terrainShader.uniformLocations.projectionMatrix,
-            false,
-            projectionMatrix,
-          );
-
-          this.gl.uniformMatrix4fv(
-            this.terrainShader.uniformLocations.viewMatrix,
-            false,
-            viewMatrix,
-          );
-
-          this.gl.uniform3fv(this.terrainShader.uniformLocations.lightVector, lightVector);
-
-          this.gl.uniform4fv(this.terrainShader.uniformLocations.fogColor, [1.0, 1.0, 1.0, 1.0]);
-          this.gl.uniform1f(
-            this.terrainShader.uniformLocations.fogNormalizationFactor, this.fogNormalizationFactor,
-          );
-
           const modelMatrix = this.getModelMatrix(
             offset.x,
             offset.y,
@@ -635,27 +630,6 @@ class TerrainRenderer implements TerrainRendererInterface {
         const { tile, offset } = this.tileGrid[order.y][order.x];
 
         if (tile) {
-          this.gl.useProgram(this.terrainShader.shaderProgram);
-
-          this.gl.uniformMatrix4fv(
-            this.terrainShader.uniformLocations.projectionMatrix,
-            false,
-            projectionMatrix,
-          );
-
-          this.gl.uniformMatrix4fv(
-            this.terrainShader.uniformLocations.viewMatrix,
-            false,
-            viewMatrix,
-          );
-
-          this.gl.uniform3fv(this.terrainShader.uniformLocations.lightVector, lightVector);
-
-          this.gl.uniform4fv(this.terrainShader.uniformLocations.fogColor, [1.0, 1.0, 1.0, 1.0]);
-          this.gl.uniform1f(
-            this.terrainShader.uniformLocations.fogNormalizationFactor, this.fogNormalizationFactor,
-          );
-
           const modelMatrix = this.getModelMatrix(
             offset.x,
             offset.y,
@@ -665,6 +639,8 @@ class TerrainRenderer implements TerrainRendererInterface {
           tile.drawTransparent(projectionMatrix, viewMatrix, modelMatrix, this.terrainShader);
         }
       });
+
+      this.gl.enable(this.gl.DEPTH_TEST);
     }
   }
 
@@ -673,7 +649,7 @@ class TerrainRenderer implements TerrainRendererInterface {
     viewMatrix: mat4,
   ): void {
     if (this.photo && this.photoAlpha > 0) {
-      this.gl.useProgram(this.photoShader.shaderProgram);
+      this.photoShader.use();
 
       this.gl.uniformMatrix4fv(
         this.photoShader.uniformLocations.projectionMatrix,

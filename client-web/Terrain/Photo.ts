@@ -173,10 +173,6 @@ class Photo {
       throw new Error('positionBuffer is null');
     }
 
-    if (this.shader.attribLocations.vertexPosition === null) {
-      throw new Error('vertexPosition is null');
-    }
-
     const floatSize = 4;
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
@@ -191,10 +187,6 @@ class Photo {
       5 * floatSize, // stride
       0, // offset
     );
-
-    if (this.shader.attribLocations.texCoord === null) {
-      throw new Error('this.shared.attribLocations.texCoord is null');
-    }
 
     this.gl.enableVertexAttribArray(this.shader.attribLocations.texCoord);
     this.gl.vertexAttribPointer(
@@ -264,6 +256,8 @@ class Photo {
         this.gl.UNSIGNED_INT, // unsigned int
         0, // offset
       );
+
+      this.gl.bindVertexArray(null);
     }
   }
 }

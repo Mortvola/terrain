@@ -1,94 +1,68 @@
-import { compileProgram, loadShader } from './Common';
+import Shader from './Shader';
 import terrainVertex from './Terrain.vert';
 import terrainFragment from './Terrain.frag';
+import { mat4, vec3, vec4 } from 'gl-matrix';
 
-class TerrainShader {
-  gl: WebGL2RenderingContext;
-
-  shaderProgram: WebGLProgram | null = null;
-
+class TerrainShader extends Shader {
   uniformLocations: {
-    projectionMatrix: WebGLUniformLocation | null,
-    viewMatrix: WebGLUniformLocation | null,
-    modelMatrix: WebGLUniformLocation | null,
-    fogColor: WebGLUniformLocation | null,
-    fogNormalizationFactor: WebGLUniformLocation | null,
-    lightVector: WebGLUniformLocation | null,
-  } = {
-      projectionMatrix: null,
-      viewMatrix: null,
-      modelMatrix: null,
-      fogColor: null,
-      fogNormalizationFactor: null,
-      lightVector: null,
-    };
+    projectionMatrix: WebGLUniformLocation,
+    viewMatrix: WebGLUniformLocation,
+    modelMatrix: WebGLUniformLocation,
+    fogColor: WebGLUniformLocation,
+    fogNormalizationFactor: WebGLUniformLocation,
+    lightVector: WebGLUniformLocation,
+  }
 
   attribLocations: {
-    vertexPosition: number | null,
-    texCoord: number | null,
-    vertexNormal: number | null,
-  } = { vertexPosition: null, texCoord: null, vertexNormal: null };
+    vertexPosition: number,
+    texCoord: number,
+    vertexNormal: number,
+  }
 
   constructor(gl:WebGL2RenderingContext) {
-    this.gl = gl;
+    super(gl, terrainVertex, terrainFragment);
 
-    const vertexShader = loadShader(this.gl, this.gl.VERTEX_SHADER, terrainVertex);
-
-    if (vertexShader === null) {
-      throw new Error('vertexShader is null');
+    this.uniformLocations = {
+      projectionMatrix: this.uniformLocation('uProjectionMatrix'),
+      viewMatrix: this.uniformLocation('uViewMatrix'),
+      modelMatrix: this.uniformLocation('uModelMatrix'),
+      fogColor: this.uniformLocation('uFogColor'),
+      fogNormalizationFactor: this.uniformLocation('uFogNormalizationFactor'),
+      lightVector: this.uniformLocation('uLightVector'),
     }
 
-    const fragmentShader = loadShader(this.gl, this.gl.FRAGMENT_SHADER, terrainFragment);
-
-    if (fragmentShader === null) {
-      throw new Error('fragmentShader is null');
+    this.attribLocations = {
+      vertexPosition: this.attributeLocation('aVertexPosition'),
+      texCoord: this.attributeLocation('aTexCoord'),
+      vertexNormal: this.attributeLocation('aVertexNormal'),
     }
+  }
 
-    this.shaderProgram = compileProgram(this.gl, vertexShader, fragmentShader);
+  setView(view: mat4) {
+    this.gl.uniformMatrix4fv(
+      this.uniformLocations.viewMatrix,
+      false,
+      view,
+    );
+  }
 
-    if (this.shaderProgram === null) {
-      throw new Error('shaderProgram is null');
-    }
+  setProjection(projection: mat4) {
+    this.gl.uniformMatrix4fv(
+      this.uniformLocations.projectionMatrix,
+      false,
+      projection,
+    );
+  }
 
-    this.uniformLocations.projectionMatrix = this.gl.getUniformLocation(this.shaderProgram, 'uProjectionMatrix');
+  setLightVector (lightVector: vec3) {
+    this.gl.uniform3fv(this.uniformLocations.lightVector, lightVector);
+  }
 
-    if (this.uniformLocations.projectionMatrix === null) {
-      throw new Error('projectionMatrix is null');
-    }
-
-    this.uniformLocations.viewMatrix = this.gl.getUniformLocation(this.shaderProgram, 'uViewMatrix');
-
-    if (this.uniformLocations.viewMatrix === null) {
-      throw new Error('viewMatrix is null');
-    }
-
-    this.uniformLocations.modelMatrix = this.gl.getUniformLocation(this.shaderProgram, 'uModelMatrix');
-
-    if (this.uniformLocations.modelMatrix === null) {
-      throw new Error('modelMatrix is null');
-    }
-
-    this.uniformLocations.fogColor = this.gl.getUniformLocation(this.shaderProgram, 'uFogColor');
-
-    if (this.uniformLocations.fogColor === null) {
-      throw new Error('uFogColor is null');
-    }
-
-    this.uniformLocations.fogNormalizationFactor = this.gl.getUniformLocation(this.shaderProgram, 'uFogNormalizationFactor');
-
-    if (this.uniformLocations.fogNormalizationFactor === null) {
-      throw new Error('uFogNormalizationFactor is null');
-    }
-
-    this.uniformLocations.lightVector = this.gl.getUniformLocation(this.shaderProgram, 'uLightVector');
-
-    if (this.uniformLocations.lightVector === null) {
-      throw new Error('lightVector is null');
-    }
-
-    this.attribLocations.vertexPosition = this.gl.getAttribLocation(this.shaderProgram, 'aVertexPosition');
-    this.attribLocations.texCoord = this.gl.getAttribLocation(this.shaderProgram, 'aTexCoord');
-    this.attribLocations.vertexNormal = this.gl.getAttribLocation(this.shaderProgram, 'aVertexNormal');
+  setFog(color: vec4, normalizationFactor: number) {
+    this.gl.uniform4fv(this.uniformLocations.fogColor, [1.0, 1.0, 1.0, 1.0]);
+    this.gl.uniform1f(
+      this.uniformLocations.fogNormalizationFactor, normalizationFactor,
+    );
   }
 }
 

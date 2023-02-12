@@ -215,14 +215,6 @@ class TerrainTile {
       throw new Error('vertexBuffer is null');
     }
 
-    if (shader.attribLocations.vertexPosition === null) {
-      throw new Error('this.attribLocations.vertexPosition is null');
-    }
-
-    if (shader.attribLocations.vertexPosition === null) {
-      throw new Error('vertexPosition is null');
-    }
-
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
     this.gl.enableVertexAttribArray(shader.attribLocations.vertexPosition);
@@ -259,16 +251,6 @@ class TerrainTile {
       throw new Error('normalBuffer is null');
     }
 
-    // Tell WebGL how to pull out the normals from
-    // the normal buffer into the vertexNormal attribute.
-    if (shader.attribLocations.vertexNormal === null) {
-      throw new Error('this.attribLocations.vertexNormal is null');
-    }
-
-    if (shader.attribLocations.vertexNormal === null) {
-      throw new Error('vertexNormal is null');
-    }
-
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, normalBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertexNormals), this.gl.STATIC_DRAW);
     this.gl.enableVertexAttribArray(shader.attribLocations.vertexNormal);
@@ -303,6 +285,8 @@ class TerrainTile {
         this.gl.UNSIGNED_INT, // unsigned int
         0, // offset
       );
+
+      this.gl.bindVertexArray(null);
     }
   }
 
@@ -315,7 +299,7 @@ class TerrainTile {
   ): void {
     // if (this.numIndices !== 0) {
     //   if (this.frames.length > 0) {
-    //     this.gl.useProgram(this.photoShader.shaderProgram);
+    //     this.photoShader.use();
 
     //     this.gl.uniformMatrix4fv(
     //       this.photoShader.uniformLocations.projectionMatrix,
