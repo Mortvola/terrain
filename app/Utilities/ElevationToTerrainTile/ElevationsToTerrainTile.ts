@@ -45,10 +45,6 @@ class ElevationsToTerrainTile {
 
   padding = 1; // the amount of padding on each side of a tile for computing edge normals.
 
-  points: Point[] = [];
-
-  triangles: Triangle[] = [];
-
   constructor(x: number, y: number, dimension: number) {
     this.x = x;
     this.y = y;
@@ -84,9 +80,9 @@ class ElevationsToTerrainTile {
     // const northLat = ne.lat + latLngPerPoint;
     // console.log(`${ne.lat}, ${ne.lng}`);
 
-    const ele = this.getElevationTile(westEdge, eastEdge, southEdge, northEdge, southLat, westLng, northLat, eastLng);
+    const terrain = this.getElevationTile(westEdge, eastEdge, southEdge, northEdge, southLat, westLng, northLat, eastLng);
   
-    if (ele === undefined) {
+    if (terrain === undefined) {
       throw new Error('elevations not loaded');
     }
   
@@ -109,16 +105,23 @@ class ElevationsToTerrainTile {
 
     console.log(`xDimension: ${xDimension}, yDimension: ${yDimension}`)
 
-    this.create(ele, xDimension, yDimension);
-  
+    const triangles = this.createTerrainTriangles(terrain, xDimension, yDimension);
+
     // addRoutes(southLat, westLng, northLat, eastLng);
-  
+
+    return this.formatOutput(terrain, triangles);
+  }
+
+  formatOutput(
+    ele: Elevations,
+    triangles: Triangle[],
+  ): Output {
     const points: number[] = [];
     const indices: number[] = [];
     const normals: number[] = [];
 
     let pointIndex = 0;
-    for (let triangle of this.triangles) {
+    for (let triangle of triangles) {
       if (!triangle.padding) {
         // output points that have not been output
         for (let point of triangle.points) {
@@ -384,21 +387,15 @@ class ElevationsToTerrainTile {
     }
   }
 
-  create(ele: Elevations, xDimension: number, yDimension: number) {
-    const numPointsX = ele.points[0].length;
-    const numPointsY = ele.points.length;
-  
-    this.createTerrainPoints(ele, numPointsX, numPointsY, xDimension, yDimension);
-    this.createTerrainFaces(numPointsX, numPointsY);
-  }
-
-  createTerrainPoints(
+  createTerrainTriangles(
     terrain: Elevations,
-    numPointsX: number,
-    numPointsY: number,
     xDimension: number,
     yDimension: number
-  ) {
+  ): Triangle[] {
+    const triangles: Triangle[] = [];
+
+    const numPointsX = terrain.points[0].length;
+    const numPointsY = terrain.points.length;
     // const { startLatOffset, startLngOffset } = getStartOffset(terrain.sw);
   
     // Center the tile around the origin.
@@ -421,92 +418,66 @@ class ElevationsToTerrainTile {
     const xStep = xDimension / (numPointsX - 1); // Terrain3dRequest::metersPerPoint;
     const startXOffset = -xDimension / 2;
   
-    let point: Point;
-
     for (let i = 0; i < numPointsX; i += 1) {
-      point = terrain.points[0][i];
+      let point = terrain.points[0][i];
       point.x = startXOffset + i * xStep;
       point.y = startYOffset;
       point.s = terrain.textureSW.s + i * sStep;
       point.t = terrain.textureSW.t;
-
-      this.points.push(point);
     }
   
     for (let j = 1; j < numPointsY; j += 1) {
-      point = terrain.points[j][0];
-      point.x = startXOffset;
-      point.y = startYOffset + j * yStep;
-      point.s = terrain.textureSW.s;
-      point.t = terrain.textureSW.t + j * tStep;
+      let upperLeft = terrain.points[j - 1][0];
+      let lowerLeft = terrain.points[j][0];
 
-      this.points.push(point);
+      lowerLeft.x = startXOffset;
+      lowerLeft.y = startYOffset + j * yStep;
+      lowerLeft.s = terrain.textureSW.s;
+      lowerLeft.t = terrain.textureSW.t + j * tStep;
   
-      for (let i = 1; i < numPointsX; i += 1) {
-        point = terrain.centers[j - 1][i - 1];
-        point.x = startXOffset + (i - 0.5) * xStep;
-        point.y = startYOffset + (j - 0.5) * yStep;
-        point.s = terrain.textureSW.s + (i - 0.5) * sStep;
-        point.t = terrain.textureSW.t + (j - 0.5) * tStep;
+      for (let i = 1; i < numPointsX; i += 1) {  
+        let upperRight = terrain.points[j - 1][i];
+        let lowerRight = terrain.points[j][i];
+        let center = terrain.centers[j - 1][i - 1];
 
-        this.points.push(point);
-  
-        point = terrain.points[j][i];
-        point.x = startXOffset + i * xStep;
-        point.y = startYOffset + j * yStep;
-        point.s = terrain.textureSW.s + i * sStep;
-        point.t = terrain.textureSW.t + j * tStep;
+        center.x = startXOffset + (i - 0.5) * xStep;
+        center.y = startYOffset + (j - 0.5) * yStep;
+        center.s = terrain.textureSW.s + (i - 0.5) * sStep;
+        center.t = terrain.textureSW.t + (j - 0.5) * tStep;
 
-        this.points.push(point);
-      }
-    }
-  }
+        lowerRight.x = startXOffset + i * xStep;
+        lowerRight.y = startYOffset + j * yStep;
+        lowerRight.s = terrain.textureSW.s + i * sStep;
+        lowerRight.t = terrain.textureSW.t + j * tStep;
 
-  createTerrainFaces(
-    numPointsX: number,
-    numPointsY: number,
-  ) {
-    // First row of quads
-    for (let i = 0; i < numPointsX - 1; i += 1) {
-      const point1 = this.points[i];
-      const point2 = this.points[i + 1];
-      const point3 = this.points[numPointsX + i * 2 + 2];
-      const point4 = this.points[numPointsX + i * 2 + 0];
-      const center = this.points[numPointsX + i * 2 + 1];
-
-      // Triangles in first of quads are considered padding and will not be output.
-      this.triangles.push(new Triangle(point1, point2, center, this.padding !== 0));
-      this.triangles.push(new Triangle(point2, point3, center, this.padding !== 0));
-      this.triangles.push(new Triangle(point3, point4, center, this.padding !== 0));
-      this.triangles.push(new Triangle(point4, point1, center, this.padding !== 0));
-    }
-  
-    const firstRowOffset = numPointsX;
-    const numRowPoints = numPointsX * 2 - 1;
-  
-    for (let j = 1; j < numPointsY - 1; j += 1) {
-      for (let i = 0; i < numPointsX - 1; i += 1) {
-        const point1 = this.points[firstRowOffset + numRowPoints * (j - 1) + i * 2 + 0];
-        const point2 = this.points[firstRowOffset + numRowPoints * (j - 1) + i * 2 + 2];
-        const point3 = this.points[firstRowOffset + numRowPoints * (j + 0) + i * 2 + 2];
-        const point4 = this.points[firstRowOffset + numRowPoints * (j + 0) + i * 2 + 0];
-        const center = this.points[firstRowOffset + numRowPoints * (j + 0) + i * 2 + 1];
-
-        // Triangles marked as pdding will not be output.
+        // Triangles marked as padding will not be output.
         // First and last of each row of quads and the last row of quads
-        const padding = this.padding !== 0 && (i === 0 || i === numPointsX - 2 || j === numPointsY - 2);
+        const padding = this.padding !== 0 && (i === 0 || i === numPointsX - 2 || j === 0 || j === numPointsY - 2);
       
-        this.triangles.push(new Triangle(point1, point2, center, padding));
-        this.triangles.push(new Triangle(point2, point3, center, padding));
-        this.triangles.push(new Triangle(point3, point4, center, padding));
-        this.triangles.push(new Triangle(point4, point1, center, padding));
+        triangles.push(new Triangle(upperLeft, upperRight, center, padding));
+        triangles.push(new Triangle(upperRight, lowerRight, center, padding));
+        triangles.push(new Triangle(lowerRight, lowerLeft, center, padding));
+        triangles.push(new Triangle(lowerLeft, upperLeft, center, padding));
+
+        upperLeft = upperRight;
+        lowerLeft = lowerRight;
       }
     }
 
     // Now that all of the triangles have been added compute the normals for each point.
-    for (let point of this.points) {
-      point.computeNormal();
+    for (let y = 0; y < terrain.points.length; y += 1) {
+      for (let x = 0; x < terrain.points[y].length; x += 1) {
+        terrain.points[y][x].computeNormal();
+      }
     }
+
+    for (let y = 0; y < terrain.centers.length; y += 1) {
+      for (let x = 0; x < terrain.centers[y].length; x += 1) {
+        terrain.centers[y][x].computeNormal();
+      }
+    }
+
+    return triangles;
   }
 }
 
