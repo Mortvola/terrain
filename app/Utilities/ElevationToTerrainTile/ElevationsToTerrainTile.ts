@@ -4,9 +4,6 @@ import Point from './Point';
 import Triangle from './Triangle';
 import { Output, TerrainOutput } from './Types';
 
-// const terrainVertexStride = 5; // 3 values for the vertex coordinates, 2 for the texutre coordinates
-// const normalStride = 3
-
 const files: Map<string, File> = new Map();
 
 type TextureCoord = {
@@ -51,8 +48,6 @@ class ElevationsToTerrainTile {
   points: Point[] = [];
 
   triangles: Triangle[] = [];
-
-  // normals: number[] = [];
 
   constructor(x: number, y: number, dimension: number) {
     this.x = x;
@@ -164,8 +159,6 @@ class ElevationsToTerrainTile {
       indices,
     }
 
-    // const firstRowLastValue = (this.dimension - 1);
-    // const lastRowFirstValue = ((this.dimension - 2) * (this.dimension * 2 - 1) + this.dimension);
     const nwPoint = ele.points[1][1];
     const nePoint = ele.points[1][ele.points[1].length - 2];
     const swPoint = ele.points[ele.points.length - 2][1];
@@ -397,131 +390,7 @@ class ElevationsToTerrainTile {
   
     this.createTerrainPoints(ele, numPointsX, numPointsY, xDimension, yDimension);
     this.createTerrainFaces(numPointsX, numPointsY);
-    // this.createTerrainNormals(numPointsX, numPointsY);
-
-    // depad the elevation points.
-    // const newElePoints: Point[][] = [
-    //   ...ele.points.slice(1, ele.points.length - 1)
-    // ];
-
-    // for (let y = 0; y < this.dimension; y += 1) {
-    //   newElePoints[y] = [
-    //     ...newElePoints[y].slice(1, newElePoints[y].length - 1)
-    //   ]
-    // }
-
-  //   ele.points = newElePoints;
-  
-    // if (this.padding) {
-    //   this.depad(ele);
-    // }
   }
-
-  // depad(ele: Elevations) {
-  //   // depad points and normals
-  //   const newPoints: Point[] = [];
-  //   const newNormals: number[] = [];
-
-  //   // Padding on top row is one on each side of the row
-  //   // Padding on subsequent rows is two on each side of the row.
-  //   // So, for this first row it padding * 2 (for top row) + padding * 2 (for the left side of the next row) 
-  //   let offset = this.dimension + this.padding * 4;
-
-  //   // Increment by 2 to skip the center vertices
-  //   for (let x = 0; x < this.dimension * 2 - 1; x += 2) {
-  //     // face coordinates
-  //     newPoints.push(this.points[(offset + x) * terrainVertexStride + 0]);
-  //     newPoints.push(this.points[(offset + x) * terrainVertexStride + 1]);
-  //     newPoints.push(this.points[(offset + x) * terrainVertexStride + 2]);
-
-  //     // texture coordinates
-  //     newPoints.push(this.points[(offset + x) * terrainVertexStride + 3]);
-  //     newPoints.push(this.points[(offset + x) * terrainVertexStride + 4]);
-
-  //     // noramls
-  //     newNormals.push(this.normals[(offset + x) * normalStride + 0]);
-  //     newNormals.push(this.normals[(offset + x) * normalStride + 1]);
-  //     newNormals.push(this.normals[(offset + x) * normalStride + 2]);
-  //   }
-
-  //   const stride = this.dimension * 2 - 1 + this.padding * 4;
-  //   offset += stride;
-
-  //   for (let y = 0; y < this.dimension - 1; y += 1) {
-  //     for (let x = 0; x < this.dimension * 2 - 1; x += 1) {
-  //       // face coordinates
-  //       newPoints.push(this.points[(offset + x) * terrainVertexStride + 0]);
-  //       newPoints.push(this.points[(offset + x) * terrainVertexStride + 1]);
-  //       newPoints.push(this.points[(offset + x) * terrainVertexStride + 2]);
-  
-  //       // texture coordinates
-  //       newPoints.push(this.points[(offset + x) * terrainVertexStride + 3]);
-  //       newPoints.push(this.points[(offset + x) * terrainVertexStride + 4]);
-
-  //       // noramls
-  //       newNormals.push(this.normals[(offset + x) * normalStride + 0]);
-  //       newNormals.push(this.normals[(offset + x) * normalStride + 1]);
-  //       newNormals.push(this.normals[(offset + x) * normalStride + 2]);
-  //     }   
-      
-  //     offset += stride;
-  //   }
-
-  //   console.log(newPoints.length);
-  //   this.points = newPoints;
-  //   this.normals = newNormals;
-    
-  //   this.triangles = [];
-  //   this.createTerrainFaces(this.dimension, this.dimension);
-
-  //   // depad the elevation points.
-  //   const newElePoints: Point[][] = [
-  //     ...ele.points.slice(1, ele.points.length - 1)
-  //   ];
-
-  //   for (let y = 0; y < this.dimension; y += 1) {
-  //     newElePoints[y] = [
-  //       ...newElePoints[y].slice(1, newElePoints[y].length - 1)
-  //     ]
-  //   }
-
-  //   ele.points = newElePoints;
-
-  //   // Depad faces
-  //   // const newIndices: number[] = [];
-
-  //   // offset = (this.dimension + 2) * 4;
-  //   // let pointOffset = this.dimension + this.padding + 2;
-  //   // const faceStride = 3;
-
-  //   // for (let x = 0; x < this.dimension - 1; x += 1) {
-  //   //   const point1 = this.indices[(offset + 0) * faceStride] - (pointOffset + 1 * x) * terrainVertexStride;
-  //   //   const point2 = this.indices[(offset + 1) * faceStride] - (pointOffset + 1 * (x + 1)) * terrainVertexStride;
-  //   //   const point3 = this.indices[offset + this.dimension * 2 + 5] - (pointOffset + this.dimension + 1) * terrainVertexStride;
-  //   //   const point4 = this.indices[offset + this.dimension * 2 + 3] - (pointOffset + this.dimension + 1) * terrainVertexStride;
-  //   //   const center = this.indices[offset + this.dimension * 2 + 4] - (pointOffset + this.dimension + 1) * terrainVertexStride;
-
-  //   //   // face 0
-  //   //   newIndices.push(point1);
-  //   //   newIndices.push(point2);
-  //   //   newIndices.push(center);
-
-  //   //   // face 1
-  //   //   newIndices.push(point2);
-  //   //   newIndices.push(point3);
-  //   //   newIndices.push(center);
-
-  //   //   // face 2
-  //   //   newIndices.push(point3);
-  //   //   newIndices.push(point4);
-  //   //   newIndices.push(center);
-
-  //   //   // face 3
-  //   //   newIndices.push(point4);
-  //   //   newIndices.push(point1);
-  //   //   newIndices.push(center);
-  //   // }
-  // }
 
   createTerrainPoints(
     terrain: Elevations,
@@ -552,17 +421,20 @@ class ElevationsToTerrainTile {
     const xStep = xDimension / (numPointsX - 1); // Terrain3dRequest::metersPerPoint;
     const startXOffset = -xDimension / 2;
   
-    for (let i = 0; i < numPointsX; i += 1) {
-      terrain.points[0][i].x = startXOffset + i * xStep;
-      terrain.points[0][i].y = startYOffset;
-      terrain.points[0][i].s = terrain.textureSW.s + i * sStep;
-      terrain.points[0][i].t = terrain.textureSW.t;
+    let point: Point;
 
-      this.points.push(terrain.points[0][i]);
+    for (let i = 0; i < numPointsX; i += 1) {
+      point = terrain.points[0][i];
+      point.x = startXOffset + i * xStep;
+      point.y = startYOffset;
+      point.s = terrain.textureSW.s + i * sStep;
+      point.t = terrain.textureSW.t;
+
+      this.points.push(point);
     }
   
     for (let j = 1; j < numPointsY; j += 1) {
-      let point = terrain.points[j][0];
+      point = terrain.points[j][0];
       point.x = startXOffset;
       point.y = startYOffset + j * yStep;
       point.s = terrain.textureSW.s;
@@ -636,157 +508,6 @@ class ElevationsToTerrainTile {
       point.computeNormal();
     }
   }
-  
-  // createTerrainNormals() {
-  //   // Create a normal for each face
-  //   const faceNormals: vec3[] = [];
-  //   for (let i = 0; i < this.triangles.length; i += 1) {
-  //     this.triangles[i].computeNormal();
-  //     faceNormals.push(this.triangles[i].normal);
-  //   }
-  
-  //   const sumNormals = (indexes: number[]): vec3 => {
-  //     const vec = [0, 0, 0];
-  
-  //     for (let i = 0; i < indexes.length; i += 1) {
-  //       vec[0] += faceNormals[indexes[i]][0];
-  //       vec[1] += faceNormals[indexes[i]][1];
-  //       vec[2] += faceNormals[indexes[i]][2];
-  //     }
-  
-  //     const normal = vec3.fromValues(vec[0], vec[1], vec[2]);
-  
-  //     return vec3.normalize(normal, normal);
-  //   };
-  
-  //   const concatNormal = (n: vec3) => {
-  //     this.normals.push(n[0]);
-  //     this.normals.push(n[1]);
-  //     this.normals.push(n[2]);
-  //   };
-  
-  //   // Sum the face normals that share a vertex
-  
-  //   let lastRow = numPointsY - 2;
-  //   let lastCell = (numPointsX - 2) * 4;
-
-  //   // first row
-  
-  //   concatNormal(sumNormals([0, 3]));
-  
-  //   for (let i = 0; i < lastCell; i += 4) {
-  //     concatNormal(sumNormals([i, i + 1, i + 7, i + 4]));
-  //   }
-  
-  //   concatNormal(sumNormals([lastCell, lastCell + 1]));
-  
-  //   // interior
-  
-  //   for (let j = 0; j < lastRow; j += 1) {
-  //     const row0Index = j * (numPointsX - 1) * 4;
-  //     const row1Index = (j + 1) * (numPointsX - 1) * 4;
-
-  //     const faceNormalIndexA = row0Index + 3;
-  //     const faceNormalIndexB = row0Index + 2;
-  //     const faceNormalIndexC = row1Index + 0;
-  //     const faceNormalIndexD = row1Index + 3;
-
-  //     concatNormal(sumNormals([
-  //       faceNormalIndexA,
-  //       faceNormalIndexB,
-  //       faceNormalIndexC,
-  //       faceNormalIndexD
-  //     ]));
-  
-  //     for (let i = 0; i < lastCell; i += 4) {
-  //       const row0Index2 = row0Index + i;
-  //       const row1Index2 = row1Index + i;
-
-  //       const faceNormalIndex0 = row0Index2 + 0;
-  //       const faceNormalIndex1 = row0Index2 + 1;
-  //       const faceNormalIndex2 = row0Index2 + 2;
-  //       const faceNormalIndex3 = row0Index2 + 3;
-  //       const faceNormalIndex6 = row0Index2 + 6;
-  //       const faceNormalIndex7 = row0Index2 + 7;
-
-  //       const faceNormalIndex12 = row1Index2 + 0;
-  //       const faceNormalIndex13 = row1Index2 + 1;
-  //       const faceNormalIndex16 = row1Index2 + 4;
-  //       const faceNormalIndex19 = row1Index2 + 7;
-
-  //       concatNormal(sumNormals([
-  //         faceNormalIndex0,
-  //         faceNormalIndex1,
-  //         faceNormalIndex2,
-  //         faceNormalIndex3
-  //       ]));
-  
-  //       concatNormal(sumNormals([
-  //         faceNormalIndex1,
-  //         faceNormalIndex2,
-  //         faceNormalIndex7,
-  //         faceNormalIndex6,
-  //         faceNormalIndex16,
-  //         faceNormalIndex19,
-  //         faceNormalIndex13,
-  //         faceNormalIndex12
-  //       ]));
-  //     }
-  
-  //     const row0Index3 = row0Index + lastCell;
-  //     const row1Index3 = row1Index + lastCell;
-
-  //     concatNormal(sumNormals([
-  //       row0Index3 + 0,
-  //       row0Index3 + 1,
-  //       row0Index3 + 2,
-  //       row0Index3 + 3
-  //     ]));
-  
-  //     concatNormal(sumNormals([
-  //       row0Index3 + 1,
-  //       row0Index3 + 2,
-  //       row1Index3 + 0,
-  //       row1Index3 + 1
-  //     ]));
-  //   }
-  
-  //   const lastRowIndex = lastRow * (numPointsX - 1) * 4;
-
-  //   // last row
-  //   concatNormal(sumNormals([
-  //     lastRowIndex + 2,
-  //     lastRowIndex + 3
-  //   ]));
-  
-  //   for (let i = 0; i < lastCell; i += 4) {
-  //     concatNormal(sumNormals([
-  //       lastRowIndex + i + 0,
-  //       lastRowIndex + i + 1,
-  //       lastRowIndex + i + 2,
-  //       lastRowIndex + i + 3
-  //     ]));
-  
-  //     concatNormal(sumNormals([
-  //       lastRowIndex + i + 2,
-  //       lastRowIndex + i + 1,
-  //       lastRowIndex + i + 7,
-  //       lastRowIndex + i + 6
-  //     ]));
-  //   }
-  
-  //   concatNormal(sumNormals([
-  //     lastRowIndex + lastCell + 0,
-  //     lastRowIndex + lastCell + 1,
-  //     lastRowIndex + lastCell + 2,
-  //     lastRowIndex + lastCell + 3
-  //   ]));
-  
-  //   concatNormal(sumNormals([
-  //     lastRowIndex + lastCell + 1,
-  //     lastRowIndex + lastCell + 2
-  //   ]));
-  // }
 }
 
 export default ElevationsToTerrainTile;
