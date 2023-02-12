@@ -149,11 +149,11 @@ class ElevationsToTerrainTile {
 
     const outputEle: number[][] = [];
 
-    for (let y = 0; y < ele.points.length; y += 1) {
+    for (let y = 1; y < ele.points.length - 1; y += 1) {
       outputEle.push([]);
     
-      for (let x = 0; x < ele.points[y].length; x += 1) {
-        outputEle[y].push(ele.points[y][x].z);
+      for (let x = 1; x < ele.points[y].length - 1; x += 1) {
+        outputEle[y - 1].push(ele.points[y][x].z);
       }
     }
   
@@ -164,13 +164,16 @@ class ElevationsToTerrainTile {
       indices,
     }
 
-    const firstRowLastValue = (this.dimension - 1);
-    const lastRowFirstValue = ((this.dimension - 2) * (this.dimension * 2 - 1) + this.dimension);
+    // const firstRowLastValue = (this.dimension - 1);
+    // const lastRowFirstValue = ((this.dimension - 2) * (this.dimension * 2 - 1) + this.dimension);
+    const nwPoint = ele.points[1][1];
+    const nePoint = ele.points[1][ele.points[1].length - 2];
+    const swPoint = ele.points[ele.points.length - 2][1];
   
     const data: Output = {
       ele: outputEle,
-      xDimension: this.points[firstRowLastValue].x - this.points[0].x,
-      yDimension: this.points[lastRowFirstValue].y - this.points[0].y,
+      xDimension: nePoint.x - nwPoint.x,
+      yDimension: swPoint.y - nwPoint.y,
       objects: [terrain]
     }
   
@@ -396,6 +399,19 @@ class ElevationsToTerrainTile {
     this.createTerrainFaces(numPointsX, numPointsY);
     // this.createTerrainNormals(numPointsX, numPointsY);
 
+    // depad the elevation points.
+    // const newElePoints: Point[][] = [
+    //   ...ele.points.slice(1, ele.points.length - 1)
+    // ];
+
+    // for (let y = 0; y < this.dimension; y += 1) {
+    //   newElePoints[y] = [
+    //     ...newElePoints[y].slice(1, newElePoints[y].length - 1)
+    //   ]
+    // }
+
+  //   ele.points = newElePoints;
+  
     // if (this.padding) {
     //   this.depad(ele);
     // }
