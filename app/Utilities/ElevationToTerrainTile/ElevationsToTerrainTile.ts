@@ -234,45 +234,45 @@ class ElevationsToTerrainTile {
           const nw = new LatLng(lat, lng);
           const file = this.loadFile(nw);
   
-          let startX = 0;
+          let fileStartX = 0;
   
           if (lng == lngMin) {
-            startX = westEdge % TILE_FILE_DIMENSION;
+            fileStartX = westEdge % TILE_FILE_DIMENSION;
           }
   
-          let endX = TILE_FILE_DIMENSION;
+          let fileEndX = TILE_FILE_DIMENSION;
   
           if (lng == lngMax - 1) {
-            endX = eastEdge % TILE_FILE_DIMENSION;
-            if (endX == 0) {
-              endX = TILE_FILE_DIMENSION;
+            fileEndX = eastEdge % TILE_FILE_DIMENSION;
+            if (fileEndX == 0) {
+              fileEndX = TILE_FILE_DIMENSION;
             }
           }
   
-          let startY = southEdge % TILE_FILE_DIMENSION;
+          let fileStartY = southEdge % TILE_FILE_DIMENSION;
           let yy = 0;
   
           if (lat != latMin) {
-            yy = TILE_FILE_DIMENSION - startY;
-            startY = 0;
+            yy = TILE_FILE_DIMENSION - fileStartY;
+            fileStartY = 0;
           }
   
-          let endY = TILE_FILE_DIMENSION;
+          let fileEndY = TILE_FILE_DIMENSION;
   
           if (lat == latMax - 1) {
-            endY = northEdge % TILE_FILE_DIMENSION;
-            if (endY == 0) {
-              endY = TILE_FILE_DIMENSION;
+            fileEndY = northEdge % TILE_FILE_DIMENSION;
+            if (fileEndY == 0) {
+              fileEndY = TILE_FILE_DIMENSION;
             }
           }
   
-          for (let j = startY; j < endY; j++) {
+          for (let j = fileStartY; j < fileEndY; j++) {
             if (yy >= points.length) {
               points.push([]);
             }
             
             // Increment by two because the data is read as bytes in pairs to get 16 bit values.
-            for (let i = startX * 2; i < endX * 2; i += 2) {
+            for (let i = fileStartX * 2; i < fileEndX * 2; i += 2) {
               points[yy].push(new Point(0, 0, file.data(i, j)));
             }
   
