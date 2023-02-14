@@ -4,8 +4,6 @@ import photoFragment from './Photo.frag';
 
 class PhotoShader extends Shader {
   uniformLocations: {
-    projectionMatrix: WebGLUniformLocation,
-    viewMatrix: WebGLUniformLocation,
     modelMatrix: WebGLUniformLocation,
   }
 
@@ -17,9 +15,9 @@ class PhotoShader extends Shader {
   constructor(gl:WebGL2RenderingContext) {
     super(gl, photoVertex, photoFragment)
 
+    this.bindMatricesUniformLocation();
+
     this.uniformLocations = {
-      projectionMatrix: this.uniformLocation('uProjectionMatrix'),
-      viewMatrix: this.uniformLocation('uViewMatrix'),
       modelMatrix: this.uniformLocation('uModelMatrix'),
     }
 

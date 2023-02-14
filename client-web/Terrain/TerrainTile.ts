@@ -198,8 +198,8 @@ class TerrainTile {
   ): void {
     this.gl.bindVertexArray(this.vao);
     this.createVertexBuffer(data.points, shader);
-    this.createIndexBuffer(data.indices);
     this.createNormalBuffer(data.normals, shader);
+    this.createIndexBuffer(data.indices);
     this.gl.bindVertexArray(null);
 
     this.numIndices = data.indices.length;
@@ -265,8 +265,6 @@ class TerrainTile {
   }
 
   draw(
-    projectionMatrix: mat4,
-    viewMatrix: mat4,
     modelMatrix: mat4,
     shader: Shader,
   ): void {
@@ -292,8 +290,6 @@ class TerrainTile {
 
   // eslint-disable-next-line class-methods-use-this
   drawTransparent(
-    projectionMatrix: mat4,
-    viewMatrix: mat4,
     modelMatrix: mat4,
     shader: Shader,
   ): void {

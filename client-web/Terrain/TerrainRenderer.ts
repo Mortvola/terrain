@@ -9,11 +9,15 @@ import PhotoShader from './Shaders/PhotoShader';
 import Photo from './Photo';
 import { PhotoInterface } from '../PhotoInterface';
 import Skybox from './Skybox';
+import SkyboxShader from './Shaders/SkyboxShader';
 
 type Tile = {
   offset: { x: number, y: number},
   tile: TerrainTile | null,
 }
+
+const sizeOfFloat = 4;
+const Matrix4x4Size = 16;
 
 const cameraZOffset = 2;
 
@@ -61,6 +65,10 @@ class TerrainRenderer implements TerrainRendererInterface {
   terrainShader: TerrainShader;
 
   photoShader: PhotoShader;
+
+  skyboxShader: SkyboxShader;
+
+  uboMatrices: WebGLBuffer;
 
   startFpsTime: number | null = null;
 
@@ -126,7 +134,11 @@ class TerrainRenderer implements TerrainRendererInterface {
 
     this.photoShader = new PhotoShader(this.gl);
 
-    this.skybox = new Skybox(this.gl);
+    this.skyboxShader = new SkyboxShader(this.gl);
+
+    this.uboMatrices = this.initUniformBufferObject();
+
+    this.skybox = new Skybox(this.gl, this.skyboxShader);
 
     this.initialize();
   }
@@ -156,6 +168,22 @@ class TerrainRenderer implements TerrainRendererInterface {
     const { tile } = this.tileGrid[tilePadding][tilePadding];
     const fogFar = (tile?.xDimension ?? 1) * tilePadding;
     // this.fogNormalizationFactor =  1 / (2 ** (fogFar * (Math.LOG2E / 4096.0)) - 1.0);
+  }
+
+  initUniformBufferObject() {
+    const uboMatrices = this.gl.createBuffer();
+    
+    if (!uboMatrices) {
+      throw new Error('uniform buffer object is null');
+    }
+
+    this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, uboMatrices);
+    this.gl.bufferData(this.gl.UNIFORM_BUFFER, 2 * Matrix4x4Size * sizeOfFloat, this.gl.STATIC_DRAW);
+    this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null);
+      
+    this.gl.bindBufferRange(this.gl.UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * Matrix4x4Size * sizeOfFloat);
+
+    return uboMatrices;
   }
 
   initTileGrid(): void {
@@ -585,26 +613,30 @@ class TerrainRenderer implements TerrainRendererInterface {
     this.gl.depthFunc(this.gl.LESS); // Near things obscure far things
     this.gl.disable(this.gl.BLEND);
 
-    this.drawTerrain(projectionMatrix, viewMatrix);
+    // Setup projection and view matrices in shared uniform object.
+    const projectionMatrixArray = new Float32Array(projectionMatrix);
+    const viewMatrixArray = new Float32Array(viewMatrix);
+
+    this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, this.uboMatrices);
+    this.gl.bufferSubData(this.gl.UNIFORM_BUFFER, 0, projectionMatrixArray);
+    this.gl.bufferSubData(this.gl.UNIFORM_BUFFER, Matrix4x4Size * sizeOfFloat, viewMatrixArray);
+    this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null);
+
+    this.drawTerrain();
 
     if (!capturePhoto) {
-      this.drawPhoto(projectionMatrix, viewMatrix);
+      this.drawPhoto();
     }
 
-    this.skybox.draw(projectionMatrix, viewMatrix);
+    this.skybox.draw();
   }
 
-  drawTerrain(
-    projectionMatrix: mat4,
-    viewMatrix: mat4,
-  ): void {
+  drawTerrain(): void {
     if (/*this.photoLoaded && */this.terrainLoaded) {
       const lightVector = vec3.fromValues(0, -1, -1);
       vec3.normalize(lightVector, lightVector);
 
       this.terrainShader.use();
-      this.terrainShader.setProjection(projectionMatrix);
-      this.terrainShader.setView(viewMatrix);
       this.terrainShader.setLightVector(lightVector);
       this.terrainShader.setFog(this.fogColor, this.fogNormalizationFactor)
 
@@ -618,7 +650,7 @@ class TerrainRenderer implements TerrainRendererInterface {
             0,
           );
 
-          tile.draw(projectionMatrix, viewMatrix, modelMatrix, this.terrainShader);
+          tile.draw(modelMatrix, this.terrainShader);
         }
       });
 
@@ -636,7 +668,7 @@ class TerrainRenderer implements TerrainRendererInterface {
             0,
           );
 
-          tile.drawTransparent(projectionMatrix, viewMatrix, modelMatrix, this.terrainShader);
+          tile.drawTransparent(modelMatrix, this.terrainShader);
         }
       });
 
@@ -644,24 +676,9 @@ class TerrainRenderer implements TerrainRendererInterface {
     }
   }
 
-  drawPhoto(
-    projectionMatrix: mat4,
-    viewMatrix: mat4,
-  ): void {
+  drawPhoto(): void {
     if (this.photo && this.photoAlpha > 0) {
       this.photoShader.use();
-
-      this.gl.uniformMatrix4fv(
-        this.photoShader.uniformLocations.projectionMatrix,
-        false,
-        projectionMatrix,
-      );
-
-      this.gl.uniformMatrix4fv(
-        this.photoShader.uniformLocations.viewMatrix,
-        false,
-        viewMatrix,
-      );
 
       if (this.terrainLoaded) {
         this.gl.blendColor(1, 1, 1, this.photoAlpha);
@@ -708,10 +725,12 @@ class TerrainRenderer implements TerrainRendererInterface {
       vec3.fromValues(this.scale, this.scale, 1),
     );
 
-    const cameraTarget = vec3.fromValues(
-      this.cameraFront[0] + cameraOffset[0],
-      this.cameraFront[1] + cameraOffset[1],
-      this.cameraFront[2] + cameraOffset[2],
+    const cameraTarget = vec3.create();
+
+    vec3.add(
+      cameraTarget,
+      this.cameraFront,
+      cameraOffset,
     );
 
     const cameraUp = vec3.create();

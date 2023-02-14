@@ -97,6 +97,12 @@ class Shader {
     return this.gl.getAttribLocation(this.shaderProgram, name);
   }
 
+  bindMatricesUniformLocation() {
+    const bindingPoint = 0;
+    const uniformBlockIndex = this.gl.getUniformBlockIndex(this.shaderProgram, 'Matrices');
+    this.gl.uniformBlockBinding(this.shaderProgram, uniformBlockIndex, bindingPoint);
+  }
+
   use() {
     this.gl.useProgram(this.shaderProgram);
   }

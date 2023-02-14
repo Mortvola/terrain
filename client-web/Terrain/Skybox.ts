@@ -14,10 +14,10 @@ class Skybox {
 
   loaded = false;
 
-  constructor(gl: WebGL2RenderingContext) {
+  constructor(gl: WebGL2RenderingContext, skyboxShader: SkyboxShader) {
     this.gl = gl
 
-    this.skyboxShader = new SkyboxShader(gl);
+    this.skyboxShader = skyboxShader;
 
     this.skyboxVAO = this.gl.createVertexArray();
     this.skyboxVBO = this.gl.createBuffer();
@@ -50,28 +50,17 @@ class Skybox {
     console.log('ready')
   }
 
-  draw (projection: mat4, view: mat4) {
-    // this.gl.depthMask(false);
-
+  draw () {
     if (this.loaded) {
       this.skyboxShader.use();
 
-      const q = quat.create();
-      mat4.getRotation(q, view);
-      const tmpView = mat4.create();
-      mat4.fromQuat(tmpView, q);
-      this.skyboxShader.setView(tmpView);
-      this.skyboxShader.setProjection(projection);
-  
       this.gl.depthFunc(this.gl.LEQUAL)
       this.gl.bindVertexArray(this.skyboxVAO);
-      this.gl.activeTexture(this.gl.TEXTURE0);
       this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.texture);
       this.gl.drawArrays(this.gl.TRIANGLES, 0, 36);
       this.gl.bindVertexArray(null);
       this.gl.depthFunc(this.gl.LESS)  
     }
-    // this.gl.depthMask(true);
   }
 
   async loadCubemap(faces: { file: string, face: GLenum }[]) {
