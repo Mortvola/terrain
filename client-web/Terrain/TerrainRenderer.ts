@@ -10,6 +10,7 @@ import Photo from './Photo';
 import { PhotoInterface } from '../PhotoInterface';
 import Skybox from './Skybox';
 import SkyboxShader from './Shaders/SkyboxShader';
+import MeshShader from './Shaders/MeshShader';
 
 type Tile = {
   offset: { x: number, y: number},
@@ -67,6 +68,8 @@ class TerrainRenderer implements TerrainRendererInterface {
   photoShader: PhotoShader;
 
   skyboxShader: SkyboxShader;
+
+  meshShader: MeshShader;
 
   uboMatrices: WebGLBuffer;
 
@@ -135,6 +138,8 @@ class TerrainRenderer implements TerrainRendererInterface {
     this.photoShader = new PhotoShader(this.gl);
 
     this.skyboxShader = new SkyboxShader(this.gl);
+
+    this.meshShader = new MeshShader(this.gl);
 
     this.uboMatrices = this.initUniformBufferObject();
 
@@ -632,27 +637,59 @@ class TerrainRenderer implements TerrainRendererInterface {
   }
 
   drawTerrain(): void {
+    const showMesh = false;
+
     if (/*this.photoLoaded && */this.terrainLoaded) {
       const lightVector = vec3.fromValues(0, -1, -1);
       vec3.normalize(lightVector, lightVector);
 
-      this.terrainShader.use();
-      this.terrainShader.setLightVector(lightVector);
-      this.terrainShader.setFog(this.fogColor, this.fogNormalizationFactor)
+      if (!showMesh) {
+        this.terrainShader.use();
+        this.terrainShader.setLightVector(lightVector);
+        this.terrainShader.setFog(this.fogColor, this.fogNormalizationFactor)
 
-      this.tileRenderOrder.forEach((order) => {
-        const { tile, offset } = this.tileGrid[order.y][order.x];
+        this.tileRenderOrder.forEach((order) => {
+          const { tile, offset } = this.tileGrid[order.y][order.x];
 
-        if (tile) {
-          const modelMatrix = this.getModelMatrix(
-            offset.x,
-            offset.y,
-            0,
-          );
+          if (tile) {
+            const modelMatrix = this.getModelMatrix(
+              offset.x,
+              offset.y,
+              0,
+            );
 
-          tile.draw(modelMatrix, this.terrainShader);
-        }
-      });
+            this.terrainShader.setModelMatrix(modelMatrix);
+
+            tile.draw();
+          }
+        });
+      }
+      else {
+        this.tileRenderOrder.forEach((order) => {
+          const { tile, offset } = this.tileGrid[order.y][order.x];
+
+          if (tile) {
+            this.terrainShader.use();
+            this.terrainShader.setLightVector(lightVector);
+            this.terrainShader.setFog(this.fogColor, this.fogNormalizationFactor)
+
+            const modelMatrix = this.getModelMatrix(
+              offset.x,
+              offset.y,
+              0,
+            );
+
+            this.terrainShader.setModelMatrix(modelMatrix);
+
+            tile.draw();
+
+            this.meshShader.use();
+            this.meshShader.setModelMatrix(modelMatrix);
+
+            tile.drawMesh();
+          }
+        });
+      }
 
       // Disable depth test when rendering transparent components.
       this.gl.disable(this.gl.DEPTH_TEST);

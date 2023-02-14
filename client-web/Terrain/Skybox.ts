@@ -47,7 +47,6 @@ class Skybox {
     await this.loadCubemap(faces);
 
     this.loaded = true;
-    console.log('ready')
   }
 
   draw () {
@@ -108,7 +107,6 @@ class Skybox {
           image,
         );
 
-        console.log('image loaded')
         // this.gl.generateMipmap(this.gl.TEXTURE_2D);
     
         // this.gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 

@@ -1,7 +1,6 @@
 import Shader from "./Shader";
 import skyboxVert from './Skybox.vert';
 import skyboxFrag from './Skybox.frag';
-import { mat4 } from "gl-matrix";
 
 class SkyboxShader extends Shader {
   attribLocations: {

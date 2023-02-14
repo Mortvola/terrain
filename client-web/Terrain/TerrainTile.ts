@@ -4,8 +4,9 @@ import {
   bilinearInterpolation, terrainTileToLatLng,
 } from '../utilities';
 import { TerrainTileProps } from '../../common/ResponseTypes';
-import Shader from './Shaders/TerrainShader';
+import TerrainShader from './Shaders/TerrainShader';
 import LatLng from '../LatLng';
+import MeshShader from './Shaders/MeshShader';
 
 type TerrainData = {
   xDimension: number,
@@ -86,7 +87,7 @@ class TerrainTile {
     this.vao = this.gl.createVertexArray();
   }
 
-  async load(shader: Shader): Promise<void | void[]> {
+  async load(shader: TerrainShader): Promise<void | void[]> {
     let data = terrainDataMap.get(locationKey(this.location));
 
     if (!data) {
@@ -194,7 +195,7 @@ class TerrainTile {
 
   initBuffers(
     data: TerrainData,
-    shader: Shader,
+    shader: TerrainShader,
   ): void {
     this.gl.bindVertexArray(this.vao);
     this.createVertexBuffer(data.points, shader);
@@ -207,7 +208,7 @@ class TerrainTile {
 
   createVertexBuffer(
     positions: number[],
-    shader: Shader,
+    shader: TerrainShader,
   ): void {
     const vertexBuffer = this.gl.createBuffer();
 
@@ -243,7 +244,7 @@ class TerrainTile {
 
   createNormalBuffer(
     vertexNormals: number[],
-    shader: Shader,
+    shader: TerrainShader,
   ): void {
     const normalBuffer = this.gl.createBuffer();
 
@@ -264,17 +265,8 @@ class TerrainTile {
     );
   }
 
-  draw(
-    modelMatrix: mat4,
-    shader: Shader,
-  ): void {
+  draw(): void {
     if (this.numIndices !== 0) {
-      this.gl.uniformMatrix4fv(
-        shader.uniformLocations.modelMatrix,
-        false,
-        modelMatrix,
-      );
-
       this.gl.bindVertexArray(this.vao);
 
       this.gl.drawElements(
@@ -288,10 +280,25 @@ class TerrainTile {
     }
   }
 
+  drawMesh(): void {
+    if (this.numIndices !== 0) {
+      this.gl.bindVertexArray(this.vao);
+
+      this.gl.drawElements(
+        this.gl.LINES,
+        this.numIndices, // vertex count
+        this.gl.UNSIGNED_INT, // unsigned int
+        0, // offset
+      );
+
+      this.gl.bindVertexArray(null);
+    }
+  }
+
   // eslint-disable-next-line class-methods-use-this
   drawTransparent(
     modelMatrix: mat4,
-    shader: Shader,
+    shader: TerrainShader,
   ): void {
     // if (this.numIndices !== 0) {
     //   if (this.frames.length > 0) {

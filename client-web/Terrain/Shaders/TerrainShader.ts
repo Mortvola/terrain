@@ -36,7 +36,15 @@ class TerrainShader extends Shader {
     }
   }
 
-  setLightVector (lightVector: vec3) {
+  setModelMatrix(modelMatrix: mat4) {
+    this.gl.uniformMatrix4fv(
+      this.uniformLocations.modelMatrix,
+      false,
+      modelMatrix,
+    );
+  }
+
+  setLightVector(lightVector: vec3) {
     this.gl.uniform3fv(this.uniformLocations.lightVector, lightVector);
   }
 
