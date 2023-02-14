@@ -2,6 +2,7 @@ import LatLng from '../../../client-web/LatLng';
 import File, { TILE_FILE_DIMENSION } from "./File";
 import Point from './Point';
 import Triangle from './Triangle';
+import TriangleMesh from './TriangleMesh';
 import { Output, TerrainOutput } from './Types';
 
 const files: Map<string, File> = new Map();
@@ -70,16 +71,6 @@ class ElevationsToTerrainTile {
     const southLat = southEdge * latLngPerPoint - 180;
     const northLat = northEdge * latLngPerPoint - 180;
 
-    // const sw = terrainTileToLatLng(this.x, this.y, this.dimension);
-    // const westLng = sw.lng - latLngPerPoint;
-    // const southLat = sw.lat - latLngPerPoint;
-    // console.log(`${sw.lat}, ${sw.lng}`);
-
-    // const ne = terrainTileToLatLng(this.x + 1, this.y + 1, this.dimension);
-    // const eastLng = ne.lng + latLngPerPoint;
-    // const northLat = ne.lat + latLngPerPoint;
-    // console.log(`${ne.lat}, ${ne.lng}`);
-
     const terrain = this.getElevationTile(westEdge, eastEdge, southEdge, northEdge, southLat, westLng, northLat, eastLng);
   
     if (terrain === undefined) {
@@ -109,7 +100,7 @@ class ElevationsToTerrainTile {
 
     // addRoutes(southLat, westLng, northLat, eastLng);
 
-    return this.formatOutput(terrain, triangles);
+    return this.formatOutput(terrain, triangles.triangles);
   }
 
   formatOutput(
@@ -391,8 +382,8 @@ class ElevationsToTerrainTile {
     terrain: Elevations,
     xDimension: number,
     yDimension: number
-  ): Triangle[] {
-    const triangles: Triangle[] = [];
+  ): TriangleMesh {
+    const mesh = new TriangleMesh();
 
     const numPointsX = terrain.points[0].length;
     const numPointsY = terrain.points.length;
@@ -452,12 +443,12 @@ class ElevationsToTerrainTile {
 
         // Triangles marked as padding will not be output.
         // First and last of each row of quads and the last row of quads
-        const padding = this.padding !== 0 && (i === 0 || i === numPointsX - 2 || j === 0 || j === numPointsY - 2);
+        const padding = this.padding !== 0 && (i === 0 || i === numPointsX - 1 || j === 0 || j === numPointsY - 1);
       
-        triangles.push(new Triangle(upperLeft, upperRight, center, padding));
-        triangles.push(new Triangle(upperRight, lowerRight, center, padding));
-        triangles.push(new Triangle(lowerRight, lowerLeft, center, padding));
-        triangles.push(new Triangle(lowerLeft, upperLeft, center, padding));
+        mesh.triangles.push(new Triangle(upperLeft, upperRight, center, padding));
+        mesh.triangles.push(new Triangle(upperRight, lowerRight, center, padding));
+        mesh.triangles.push(new Triangle(lowerRight, lowerLeft, center, padding));
+        mesh.triangles.push(new Triangle(lowerLeft, upperLeft, center, padding));
 
         upperLeft = upperRight;
         lowerLeft = lowerRight;
@@ -477,7 +468,7 @@ class ElevationsToTerrainTile {
       }
     }
 
-    return triangles;
+    return mesh;
   }
 }
 
