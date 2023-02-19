@@ -1,8 +1,10 @@
-import { latLngToTerrainTile } from '../../../client-web/utilities';
 import fs from 'fs';
+import { latLngToTerrainTile } from '../../../client-web/utilities';
 import ElevationsToTerrainTile from './ElevationsToTerrainTile';
+import { applyTrail, partitionTrail, readPCT } from './Trail';
+import { Output, TerrainOutput } from './Types';
 
-const saveFile = (x: number, y: number, dimension: number, result) => {
+const saveFile = (x: number, y: number, dimension: number, result: Output) => {
   const folderX = Math.floor(x / 10);
   const folderY = Math.floor(y / 10);
   const filename = `${x}-${y}-${dimension}.dat`;
@@ -43,8 +45,10 @@ if (process.argv[2] === 'range') {
     for (let x = startX; x < endX; x += 1) {
       const converter = new ElevationsToTerrainTile(x, y, dimension);
   
-      const result = converter.render();
+      const [elevations, triangles] = converter.render();
     
+      const result = converter.formatOutput(elevations, triangles);
+
       saveFile(x, y, dimension, result);
     }
   }
@@ -54,13 +58,34 @@ else {
     throw new Error('not enough arguments.')
   }
   
+  // const [x1, y1] = latLngToTerrainTile(46.514279, -121.456191, 128);
+  // console.log(x1, y1);
+
   const x = parseFloat(process.argv[2]);
   const y = parseFloat(process.argv[3]);
   const dimension = parseFloat(process.argv[4])
-  
+
+  const trail = readPCT();
+  const trailMap = partitionTrail(trail, dimension);
+
   const converter = new ElevationsToTerrainTile(x, y, dimension);
   
-  const result = converter.render();
+  const [elevations, triangles, mercatorValues] = converter.render();
+
+  const trails = applyTrail(trailMap, triangles, x, y, mercatorValues);
+
+  console.log(trails.length);
+
+  const result = converter.formatOutput(elevations, triangles);
+
+  const t: TerrainOutput = {
+    type: 'line',
+    points: trails[0].flatMap((p) => p),
+    normals: [] as number[],
+    indices: [] as number[],
+  };
+
+  result.objects.push(t)
 
   saveFile(x, y, dimension, result);
 }

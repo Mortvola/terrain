@@ -12,9 +12,11 @@ type TerrainData = {
   xDimension: number,
   yDimension: number,
   elevation: number[][],
-  points: number[],
-  indices: number[],
-  normals: number[],
+  objects: {
+    points: number[],
+    indices: number[],
+    normals: number[],  
+  }[],
 }
 
 export type Location = { x: number, y: number, dimension: number };
@@ -72,7 +74,8 @@ class TerrainTile {
       this.location.x, this.location.y, this.location.dimension,
     );
 
-    const halfDimension = (this.location.dimension / 3600) / 2;
+    // The tile also contains the points from the neighboring north and east tiles (thus the + 1)
+    const halfDimension = ((this.location.dimension + 1) / 3600) / 2;
 
     this.sw = new LatLng(
       this.latLngCenter.lat - halfDimension,
@@ -102,9 +105,7 @@ class TerrainTile {
             xDimension: body.xDimension,
             yDimension: body.yDimension,
             elevation: body.ele,
-            points: body.objects[0].points,
-            indices: body.objects[0].indices,
-            normals: body.objects[0].normals,
+            objects: body.objects,
           };
 
           terrainDataMap.set(locationKey(this.location), data);
@@ -198,12 +199,12 @@ class TerrainTile {
     shader: TerrainShader,
   ): void {
     this.gl.bindVertexArray(this.vao);
-    this.createVertexBuffer(data.points, shader);
-    this.createNormalBuffer(data.normals, shader);
-    this.createIndexBuffer(data.indices);
+    this.createVertexBuffer(data.objects[0].points, shader);
+    this.createNormalBuffer(data.objects[0].normals, shader);
+    this.createIndexBuffer(data.objects[0].indices);
     this.gl.bindVertexArray(null);
 
-    this.numIndices = data.indices.length;
+    this.numIndices = data.objects[0].indices.length;
   }
 
   createVertexBuffer(

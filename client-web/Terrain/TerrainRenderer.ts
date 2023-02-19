@@ -152,8 +152,12 @@ class TerrainRenderer implements TerrainRendererInterface {
     this.initTileGrid();
 
     const [x, y] = latLngToTerrainTile(this.position.lat, this.position.lng, tileDimension);
-    const latLngCenter = terrainTileToLatLng(x, y, tileDimension);
-
+    const swLatLng = terrainTileToLatLng(x, y, tileDimension);
+    const neLatLng = terrainTileToLatLng(x + 1, y + 1, tileDimension);
+    const latLngCenter = new LatLng(
+      swLatLng.lat + (neLatLng.lat - swLatLng.lat) / 2,
+      swLatLng.lng + (neLatLng.lng - swLatLng.lng) / 2,
+    )
     this.scale = Math.cos(degToRad(latLngCenter.lat));
 
     this.initCamera(x, y, latLngCenter);

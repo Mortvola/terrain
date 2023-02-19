@@ -1,9 +1,10 @@
+import { latLngToMercator, terrainTileToLatLng } from '../../../client-web/utilities';
 import LatLng from '../../../client-web/LatLng';
 import File, { TILE_FILE_DIMENSION } from "./File";
 import Point from './Point';
 import Triangle from './Triangle';
 import TriangleMesh from './TriangleMesh';
-import { Output, TerrainOutput } from './Types';
+import { MercatorValues, Output, TerrainOutput } from './Types';
 
 const files: Map<string, File> = new Map();
 
@@ -52,25 +53,29 @@ class ElevationsToTerrainTile {
     this.dimension = dimension;
   }
 
-  render() {
-    const latLngPerPoint = 1 / TILE_FILE_DIMENSION;
+  render(): [Elevations, Triangle[], MercatorValues] {
+    // const latLngPerPoint = 1 / TILE_FILE_DIMENSION;
 
-    let westEdge = this.x * (this.dimension - 1);
-    let eastEdge = westEdge + this.dimension;
+    let westEdge = this.x * this.dimension;
+    let eastEdge = westEdge + this.dimension + 1;
     westEdge -= this.padding;
     eastEdge += this.padding;
 
-    const westLng = westEdge * latLngPerPoint - 180;
-    const eastLng = eastEdge * latLngPerPoint - 180;
+    // const westLng = westEdge * latLngPerPoint - 180;
+    // const eastLng = eastEdge * latLngPerPoint - 180;
   
-    let southEdge = this.y * (this.dimension - 1);
-    let northEdge = southEdge + this.dimension;
+    let southEdge = this.y * this.dimension;
+    let northEdge = southEdge + this.dimension + 1;
     southEdge -= this.padding;
     northEdge += this.padding;
   
-    const southLat = southEdge * latLngPerPoint - 180;
-    const northLat = northEdge * latLngPerPoint - 180;
+    // const southLat = southEdge * latLngPerPoint - 180;
+    // const northLat = northEdge * latLngPerPoint - 180;
 
+    const { lat: southLat, lng: westLng } = terrainTileToLatLng(this.x, this.y, this.dimension);
+    const { lat: northLat, lng: eastLng } = terrainTileToLatLng(this.x + 1, this.y + 1, this.dimension);
+    // console.log(t);
+    
     const terrain = this.getElevationTile(westEdge, eastEdge, southEdge, northEdge, southLat, westLng, northLat, eastLng);
   
     if (terrain === undefined) {
@@ -82,11 +87,11 @@ class ElevationsToTerrainTile {
     let eastMercator: number;
     let northMercator: number;
   
-    [westMercator, southMercator] = ElevationsToTerrainTile.latLngToMercator(
+    [westMercator, southMercator] = latLngToMercator(
       southLat,
       westLng,
     );
-    [eastMercator, northMercator] = ElevationsToTerrainTile.latLngToMercator(
+    [eastMercator, northMercator] = latLngToMercator(
       northLat,
       eastLng,
     );
@@ -100,7 +105,20 @@ class ElevationsToTerrainTile {
 
     // addRoutes(southLat, westLng, northLat, eastLng);
 
-    return this.formatOutput(terrain, triangles.triangles);
+    return [
+      terrain,
+      triangles.triangles,
+      {
+        westMercator,
+        southMercator,
+        eastMercator,
+        northMercator,
+        southLat,
+        westLng,
+        northLat,
+        eastLng,
+      },
+    ];
   }
 
   formatOutput(
@@ -167,31 +185,6 @@ class ElevationsToTerrainTile {
     return data;
   }
 
-  static latLngToMercator(lat: number, lng: number): number[] {
-    const degToRad = (d: number) => (
-      (d / 180.0) * Math.PI
-    );
-  
-    const latRad = degToRad(lat);
-    const lngRad = degToRad(lng);
-  
-    let equatorialRadius = 6378137.0;
-    let a = equatorialRadius;
-    let f = 1 / 298.257223563;
-    let b = a * (1 - f);
-    let e = Math.sqrt(1 - (b * b) / (a * a)); // ellipsoid eccentricity
-  
-    const sinLatRad = Math.sin(latRad);
-  
-    const c = ((1 - e * sinLatRad) / (1 + e * sinLatRad));
-  
-    const x = lngRad * a;
-    const y = Math.log(((1 + sinLatRad) / (1 - sinLatRad)) * Math.pow(c, e)) * (a / 2);
-  
-    console.log(`latLngToMercator: ${lat}, ${lng} => ${x}, ${y}`);
-    return [x, y];
-  }
-
   getElevationTile(
     westEdge: number,
     eastEdge: number,
@@ -210,17 +203,34 @@ class ElevationsToTerrainTile {
       // const northEdge = southEdge + (this.dimension - 1 + this.padding);
   
       const latMin = Math.floor(southLat);
-      const latMax = Math.ceil(northLat);
+      const latMax = Math.floor(northLat);
   
       const lngMin = Math.floor(westLng);
-      const lngMax = Math.ceil(eastLng);
+      const lngMax = Math.floor(eastLng);
   
       console.log(`(${southLat}, ${westLng}) - (${northLat}, ${eastLng})`);
   
       const points: Point[][] = [];
 
-      for (let lat = latMin; lat < latMax; lat += 1) {
-        for (let lng = lngMin; lng < lngMax; lng += 1) {
+      for (let lat = latMin; lat <= latMax; lat += 1) {
+        for (let lng = lngMin; lng <= lngMax; lng += 1) {
+  
+          let fileStartY = southEdge % TILE_FILE_DIMENSION;
+          let yy = 0;
+  
+          if (lat != latMin) {
+            yy = TILE_FILE_DIMENSION - fileStartY;
+            fileStartY = 0;
+          }
+  
+          let fileEndY = TILE_FILE_DIMENSION;
+  
+          if (lat == latMax) {
+            fileEndY = northEdge % TILE_FILE_DIMENSION;
+            if (fileEndY == 0) {
+              fileEndY = TILE_FILE_DIMENSION;
+            }
+          }
   
           const nw = new LatLng(lat, lng);
           const file = this.loadFile(nw);
@@ -233,27 +243,13 @@ class ElevationsToTerrainTile {
   
           let fileEndX = TILE_FILE_DIMENSION;
   
-          if (lng == lngMax - 1) {
+          // if (fileEndX < fileStartX) {
+          //   fileEndX = TILE_FILE_DIMENSION;
+          // }
+          if (lng == lngMax) {
             fileEndX = eastEdge % TILE_FILE_DIMENSION;
             if (fileEndX == 0) {
               fileEndX = TILE_FILE_DIMENSION;
-            }
-          }
-  
-          let fileStartY = southEdge % TILE_FILE_DIMENSION;
-          let yy = 0;
-  
-          if (lat != latMin) {
-            yy = TILE_FILE_DIMENSION - fileStartY;
-            fileStartY = 0;
-          }
-  
-          let fileEndY = TILE_FILE_DIMENSION;
-  
-          if (lat == latMax - 1) {
-            fileEndY = northEdge % TILE_FILE_DIMENSION;
-            if (fileEndY == 0) {
-              fileEndY = TILE_FILE_DIMENSION;
             }
           }
   
@@ -403,10 +399,10 @@ class ElevationsToTerrainTile {
   
     // we are purposefully using latDistance for both dimensions
     // here to create a square tile (at least for now).
-    const yStep = yDimension / (numPointsY - 1); // Terrain3dRequest::metersPerPoint;
+    const yStep = yDimension / (numPointsY - 1);
     const startYOffset = -yDimension / 2;
   
-    const xStep = xDimension / (numPointsX - 1); // Terrain3dRequest::metersPerPoint;
+    const xStep = xDimension / (numPointsX - 1);
     const startXOffset = -xDimension / 2;
   
     for (let i = 0; i < numPointsX; i += 1) {

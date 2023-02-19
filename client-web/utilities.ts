@@ -204,20 +204,15 @@ export const latLngToTerrainTile = (
   lat: number, lng:number, dimension: number,
 ): [number, number] => {
   // Add 180 to convert coordinates to positive values for convenience.
-  const x = Math.floor(((lng + 180) * 3600) / (dimension - 1));
-  const y = Math.floor(((lat + 180) * 3600) / (dimension - 1));
+  const x = Math.floor(((lng + 180) * 3600) / dimension);
+  const y = Math.floor(((lat + 180) * 3600) / dimension);
 
   return [x, y];
 };
 
 export const terrainTileToLatLng = (x: number, y: number, dimension: number): LatLng => {
-  const numTiles = (360 * 3600) / (dimension - 1);
-
-  let lng = ((x / numTiles) * 360 - 180);
-  let lat = ((y / numTiles) * 360 - 180);
-
-  lng += ((dimension - 1) / 3600) / 2;
-  lat += ((dimension - 1) / 3600) / 2;
+  let lng = (x * dimension) / 3600 - 180;
+  let lat = (y * dimension) / 3600 - 180;
 
   return new LatLng(lat, lng);
 };
