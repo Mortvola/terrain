@@ -1,20 +1,13 @@
-import Shader from './Shader';
+import { vec3, vec4 } from 'gl-matrix';
 import terrainVertex from './Terrain.vert';
 import terrainFragment from './Terrain.frag';
-import { mat4, vec3, vec4 } from 'gl-matrix';
+import TriangleMeshShader from './TriangleMeshShader';
 
-class TerrainShader extends Shader {
+class TerrainShader extends TriangleMeshShader {
   uniformLocations: {
-    modelMatrix: WebGLUniformLocation,
     fogColor: WebGLUniformLocation,
     fogNormalizationFactor: WebGLUniformLocation,
     lightVector: WebGLUniformLocation,
-  }
-
-  attribLocations: {
-    vertexPosition: number,
-    texCoord: number,
-    vertexNormal: number,
   }
 
   constructor(gl:WebGL2RenderingContext) {
@@ -23,25 +16,10 @@ class TerrainShader extends Shader {
     this.bindMatricesUniformLocation();
 
     this.uniformLocations = {
-      modelMatrix: this.uniformLocation('uModelMatrix'),
       fogColor: this.uniformLocation('uFogColor'),
       fogNormalizationFactor: this.uniformLocation('uFogNormalizationFactor'),
       lightVector: this.uniformLocation('uLightVector'),
     }
-
-    this.attribLocations = {
-      vertexPosition: this.attributeLocation('aVertexPosition'),
-      texCoord: this.attributeLocation('aTexCoord'),
-      vertexNormal: this.attributeLocation('aVertexNormal'),
-    }
-  }
-
-  setModelMatrix(modelMatrix: mat4) {
-    this.gl.uniformMatrix4fv(
-      this.uniformLocations.modelMatrix,
-      false,
-      modelMatrix,
-    );
   }
 
   setLightVector(lightVector: vec3) {

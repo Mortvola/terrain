@@ -178,9 +178,9 @@ class Photo {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
 
-    this.gl.enableVertexAttribArray(this.shader.attribLocations.vertexPosition);
+    this.gl.enableVertexAttribArray(this.shader.vertexPosition);
     this.gl.vertexAttribPointer(
-      this.shader.attribLocations.vertexPosition,
+      this.shader.vertexPosition,
       3, // Number of components
       this.gl.FLOAT,
       false, // normalize

@@ -1,28 +1,20 @@
 import Shader from './Shader';
-import meshVert from './Mesh.vert';
-import meshFrag from './Mesh.frag';
+import lineVert from './Line.vert';
+import lineFrag from './Line.frag';
 import { mat4 } from 'gl-matrix';
 
-class MeshShader extends Shader {
+class LineShader extends Shader {
   uniformLocations: {
     modelMatrix: WebGLUniformLocation,
   }
 
-  attribLocations: {
-    position: number,
-  };
-
   constructor(gl: WebGL2RenderingContext) {
-    super(gl, meshVert, meshFrag);
+    super(gl, lineVert, lineFrag);
 
     this.bindMatricesUniformLocation();
 
     this.uniformLocations = {
       modelMatrix: this.uniformLocation('uModelMatrix'),
-    }
-
-    this.attribLocations = {
-      position: this.attributeLocation('aVertexPosition'),
     }
   }
 
@@ -35,4 +27,4 @@ class MeshShader extends Shader {
   }
 }
 
-export default MeshShader;
+export default LineShader;

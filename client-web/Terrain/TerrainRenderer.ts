@@ -10,7 +10,7 @@ import Photo from './Photo';
 import { PhotoInterface } from '../PhotoInterface';
 import Skybox from './Skybox';
 import SkyboxShader from './Shaders/SkyboxShader';
-import MeshShader from './Shaders/MeshShader';
+import LineShader from './Shaders/LineShader';
 
 type Tile = {
   offset: { x: number, y: number},
@@ -69,7 +69,7 @@ class TerrainRenderer implements TerrainRendererInterface {
 
   skyboxShader: SkyboxShader;
 
-  meshShader: MeshShader;
+  lineShader: LineShader;
 
   uboMatrices: WebGLBuffer;
 
@@ -139,7 +139,7 @@ class TerrainRenderer implements TerrainRendererInterface {
 
     this.skyboxShader = new SkyboxShader(this.gl);
 
-    this.meshShader = new MeshShader(this.gl);
+    this.lineShader = new LineShader(this.gl);
 
     this.uboMatrices = this.initUniformBufferObject();
 
@@ -421,7 +421,7 @@ class TerrainRenderer implements TerrainRendererInterface {
 
       this.tileGrid[y][x].tile = tile;
 
-      return tile.load(this.terrainShader);
+      return tile.load(this.terrainShader, this.lineShader);
     }
 
     this.tileGrid[y][x].tile = tile;
@@ -648,10 +648,6 @@ class TerrainRenderer implements TerrainRendererInterface {
       vec3.normalize(lightVector, lightVector);
 
       if (!showMesh) {
-        this.terrainShader.use();
-        this.terrainShader.setLightVector(lightVector);
-        this.terrainShader.setFog(this.fogColor, this.fogNormalizationFactor)
-
         this.tileRenderOrder.forEach((order) => {
           const { tile, offset } = this.tileGrid[order.y][order.x];
 
@@ -662,9 +658,11 @@ class TerrainRenderer implements TerrainRendererInterface {
               0,
             );
 
-            this.terrainShader.setModelMatrix(modelMatrix);
+            this.terrainShader.use();
+            this.terrainShader.setLightVector(lightVector);
+            this.terrainShader.setFog(this.fogColor, this.fogNormalizationFactor)
 
-            tile.draw();
+            tile.draw(modelMatrix);
           }
         });
       }
@@ -685,10 +683,10 @@ class TerrainRenderer implements TerrainRendererInterface {
 
             this.terrainShader.setModelMatrix(modelMatrix);
 
-            tile.draw();
+            tile.draw(modelMatrix);
 
-            this.meshShader.use();
-            this.meshShader.setModelMatrix(modelMatrix);
+            this.lineShader.use();
+            this.lineShader.setModelMatrix(modelMatrix);
 
             tile.drawMesh();
           }

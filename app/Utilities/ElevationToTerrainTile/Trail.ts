@@ -115,6 +115,8 @@ export const applyTrail = (
               y1 - mercatorValues.southMercator - yDimension / 2,
             ];
       
+            let prevEdge: Line2D | null = null;
+
             for (;;) {
               const polygon: geo.Polygon = [
                 [triangle.points[0].x, triangle.points[0].y],
@@ -125,6 +127,7 @@ export const applyTrail = (
               const intersection = geo.pointInPolygon(point, polygon);
 
               if (intersection) {
+                prevEdge = null;
                 // const plane = new Plane(triangle.normal, [triangle.points[1].x, triangle.points[1].y, triangle.points[1].z]);
 
                 // const prevPoint = plane.lineIntersection([point[0], point[1], 0], [0, 0, 1])
@@ -148,24 +151,53 @@ export const applyTrail = (
                 point,
               );
 
+              triangle.points.forEach((p) => {
+                console.log(`(${p.x}, ${p.y})`)
+              })
+
+              console.log('--------')
+              console.log(`(${points[points.length - 1][0]}, ${points[points.length - 1][1]})`)
+              console.log(`(${point[0]}, ${point[1]})`)
+
               for (let j = 0; j < 3; j += 1) {
-                const l2 = new Line2D(
+                const edge = new Line2D(
                   [triangle.points[j].x, triangle.points[j].y],
                   [triangle.points[(j + 1) % 3].x, triangle.points[(j + 1) % 3].y],
                 )
 
+                if (
+                  prevEdge &&
+                  (
+                    (
+                      edge.point1[0] === prevEdge.point1[0] &&
+                      edge.point1[1] === prevEdge.point1[1] &&
+                      edge.point2[0] === prevEdge.point2[0] &&
+                      edge.point2[1] === prevEdge.point2[1]
+                    ) || (
+                      edge.point1[0] === prevEdge.point2[0] &&
+                      edge.point1[1] === prevEdge.point2[1] &&
+                      edge.point2[0] === prevEdge.point1[0] &&
+                      edge.point2[1] === prevEdge.point1[1]
+                    )
+                  )
+                ) {
+                  continue;
+                }
+                
                 // console.log(l1);
-                // console.log(l2);
+                // console.log(edge);
 
-                const intersection = l1.intersectionLine2D(l2);
+                const intersection = l1.intersectionLine2D(edge);
 
                 // Don't consider the edge where the segment entered the triangle (t === 0)
                 if (
-                  intersection  && 
-                  intersection.t >= 0.00001
+                  intersection  // && 
+                  // intersection.t >= 0.00001
                   // intersection.point[0] !== points[points.length - 1][0] &&
                   // intersection.point[1] !== points[points.length - 1][1]
                 ) {
+                  prevEdge = edge;
+
                   // Push point found on edge of triangle onto the list of points.
                   const projectedPoint = projectPointOnPlane(triangle, intersection.point);
                   points.push(projectedPoint);

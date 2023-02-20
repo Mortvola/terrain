@@ -21,7 +21,7 @@ export interface PointInterface {
 }
 
 export type TerrainOutput = {
-  type: string,
+  type: 'triangles' | 'line',
   points: number[],
   normals: number[],
   indices: number[],

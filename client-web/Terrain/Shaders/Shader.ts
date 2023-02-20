@@ -1,8 +1,14 @@
+import { mat4 } from "gl-matrix";
+
 class Shader {
   gl: WebGL2RenderingContext;
 
   shaderProgram: WebGLProgram;
 
+  vertexPosition: number;
+
+  modelMatrix: WebGLUniformLocation = 0;
+  
   constructor(gl: WebGL2RenderingContext, vertexShdaderCode: string, fragmentShaderCode: string) {
     this.gl = gl;
 
@@ -23,6 +29,14 @@ class Shader {
     if (this.shaderProgram === null) {
       throw new Error('shaderProgram is null');
     }
+
+    try {
+      this.modelMatrix = this.uniformLocation('uModelMatrix');
+    }
+    catch(error) {
+    }
+
+    this.vertexPosition = this.attributeLocation('aVertexPosition');
   }
 
   compileProgram(
@@ -101,6 +115,14 @@ class Shader {
     const bindingPoint = 0;
     const uniformBlockIndex = this.gl.getUniformBlockIndex(this.shaderProgram, 'Matrices');
     this.gl.uniformBlockBinding(this.shaderProgram, uniformBlockIndex, bindingPoint);
+  }
+
+  setModelMatrix(modelMatrix: mat4) {
+    this.gl.uniformMatrix4fv(
+      this.modelMatrix,
+      false,
+      modelMatrix,
+    );
   }
 
   use() {

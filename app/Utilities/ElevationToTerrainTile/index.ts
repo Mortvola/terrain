@@ -41,13 +41,29 @@ if (process.argv[2] === 'range') {
   endX -= 1;
   endY -= 1;
 
+  const trail = readPCT();
+  const trailMap = partitionTrail(trail, dimension);
+
   for (let y = startY; y < endY; y += 1) {
     for (let x = startX; x < endX; x += 1) {
       const converter = new ElevationsToTerrainTile(x, y, dimension);
   
-      const [elevations, triangles] = converter.render();
+      const [elevations, triangles, mercatorValues] = converter.render();
     
+      const trails = applyTrail(trailMap, triangles, x, y, mercatorValues);
+
       const result = converter.formatOutput(elevations, triangles);
+
+      trails?.forEach((trail) => {
+        const t: TerrainOutput = {
+          type: 'line',
+          points: trail.flatMap((p) => p),
+          normals: [] as number[],
+          indices: [] as number[],
+        };
+      
+        result.objects.push(t)  
+      });
 
       saveFile(x, y, dimension, result);
     }
@@ -74,18 +90,18 @@ else {
 
   const trails = applyTrail(trailMap, triangles, x, y, mercatorValues);
 
-  console.log(trails.length);
-
   const result = converter.formatOutput(elevations, triangles);
 
-  const t: TerrainOutput = {
-    type: 'line',
-    points: trails[0].flatMap((p) => p),
-    normals: [] as number[],
-    indices: [] as number[],
-  };
-
-  result.objects.push(t)
+  trails?.forEach((trail) => {
+    const t: TerrainOutput = {
+      type: 'line',
+      points: trail.flatMap((p) => p),
+      normals: [] as number[],
+      indices: [] as number[],
+    };
+  
+    result.objects.push(t)  
+  })
 
   saveFile(x, y, dimension, result);
 }

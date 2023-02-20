@@ -6,13 +6,17 @@ import {
 import { TerrainTileProps } from '../../common/ResponseTypes';
 import TerrainShader from './Shaders/TerrainShader';
 import LatLng from '../LatLng';
-import MeshShader from './Shaders/MeshShader';
+import TriangleMesh from './RenderElements/TriangleMesh';
+import RenderObjectInterface from './RenderElements/RenderObject';
+import Line from './RenderElements/Line';
+import LineShader from './Shaders/LineShader';
 
 type TerrainData = {
   xDimension: number,
   yDimension: number,
   elevation: number[][],
   objects: {
+    type: 'triangles' | 'line',
     points: number[],
     indices: number[],
     normals: number[],  
@@ -46,13 +50,13 @@ class TerrainTile {
 
   renderer: TerrainRendererInterface;
 
-  vao: WebGLVertexArrayObject | null;
+  // vao: WebGLVertexArrayObject | null;
 
   gl: WebGL2RenderingContext;
 
-  texture: WebGLTexture | null = null;
+  // texture: WebGLTexture | null = null;
 
-  numIndices = 0;
+  // numIndices = 0;
 
   elevation: number[][] = [];
 
@@ -61,6 +65,8 @@ class TerrainTile {
   ne: LatLng;
 
   latLngCenter: LatLng;
+
+  objects: RenderObjectInterface[] = [];
 
   constructor(
     renderer: TerrainRendererInterface,
@@ -87,10 +93,10 @@ class TerrainTile {
       this.latLngCenter.lng + halfDimension,
     );
 
-    this.vao = this.gl.createVertexArray();
+    // this.vao = this.gl.createVertexArray();
   }
 
-  async load(shader: TerrainShader): Promise<void | void[]> {
+  async load(shader: TerrainShader, lineShader: LineShader): Promise<void | void[]> {
     let data = terrainDataMap.get(locationKey(this.location));
 
     if (!data) {
@@ -123,7 +129,25 @@ class TerrainTile {
       this.xDimension = data.xDimension;
       this.yDimension = data.yDimension;
       this.elevation = data.elevation;
-      this.initBuffers(data, shader);
+      // this.initBuffers(data, shader);
+      this.objects = data.objects.map((object) => {
+        switch (object.type) {
+          case 'triangles':
+            return new TriangleMesh(
+              this.gl,
+              object.points,
+              object.normals,
+              object.indices,
+              shader,
+            );
+          
+          case 'line':
+            return new Line(this.gl, object.points, lineShader);
+
+          default:
+            throw new Error(`Unkonwn render type: ${object.type}`);
+        }
+      });
     }
   }
 
@@ -194,106 +218,12 @@ class TerrainTile {
   //   return Promise.resolve();
   // }
 
-  initBuffers(
-    data: TerrainData,
-    shader: TerrainShader,
-  ): void {
-    this.gl.bindVertexArray(this.vao);
-    this.createVertexBuffer(data.objects[0].points, shader);
-    this.createNormalBuffer(data.objects[0].normals, shader);
-    this.createIndexBuffer(data.objects[0].indices);
-    this.gl.bindVertexArray(null);
-
-    this.numIndices = data.objects[0].indices.length;
-  }
-
-  createVertexBuffer(
-    positions: number[],
-    shader: TerrainShader,
-  ): void {
-    const vertexBuffer = this.gl.createBuffer();
-
-    if (vertexBuffer === null) {
-      throw new Error('vertexBuffer is null');
-    }
-
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
-    this.gl.enableVertexAttribArray(shader.attribLocations.vertexPosition);
-    this.gl.vertexAttribPointer(
-      shader.attribLocations.vertexPosition,
-      3, // Number of components
-      this.gl.FLOAT,
-      false, // normalize
-      terrainVertexStride * 4, // stride
-      0, // offset
-    );
-  }
-
-  createIndexBuffer(
-    indices: number[],
-  ): void {
-    const indexBuffer = this.gl.createBuffer();
-
-    if (indexBuffer === null) {
-      throw new Error('indexBuffer is null');
-    }
-
-    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), this.gl.STATIC_DRAW);
-  }
-
-  createNormalBuffer(
-    vertexNormals: number[],
-    shader: TerrainShader,
-  ): void {
-    const normalBuffer = this.gl.createBuffer();
-
-    if (normalBuffer === null) {
-      throw new Error('normalBuffer is null');
-    }
-
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, normalBuffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertexNormals), this.gl.STATIC_DRAW);
-    this.gl.enableVertexAttribArray(shader.attribLocations.vertexNormal);
-    this.gl.vertexAttribPointer(
-      shader.attribLocations.vertexNormal,
-      3, // Number of components
-      this.gl.FLOAT, // type
-      false, // normalize
-      0, // stride
-      0, // offset
-    );
-  }
-
-  draw(): void {
-    if (this.numIndices !== 0) {
-      this.gl.bindVertexArray(this.vao);
-
-      this.gl.drawElements(
-        this.gl.TRIANGLES,
-        this.numIndices, // vertex count
-        this.gl.UNSIGNED_INT, // unsigned int
-        0, // offset
-      );
-
-      this.gl.bindVertexArray(null);
-    }
+  draw(modelMatrix: mat4): void {
+    this.objects.forEach((object) => object.draw(modelMatrix));
   }
 
   drawMesh(): void {
-    if (this.numIndices !== 0) {
-      this.gl.bindVertexArray(this.vao);
-
-      this.gl.drawElements(
-        this.gl.LINES,
-        this.numIndices, // vertex count
-        this.gl.UNSIGNED_INT, // unsigned int
-        0, // offset
-      );
-
-      this.gl.bindVertexArray(null);
-    }
+    this.objects.forEach((object) => object.drawMesh());
   }
 
   // eslint-disable-next-line class-methods-use-this

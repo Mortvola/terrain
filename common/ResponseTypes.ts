@@ -1,5 +1,5 @@
 export type ObjectProps = {
-  type: string,
+  type: 'triangles' | 'line',
   points: number[],
   normals: number[],
   indices: number[],

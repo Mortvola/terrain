@@ -8,7 +8,6 @@ class PhotoShader extends Shader {
   }
 
   attribLocations: {
-    vertexPosition: number,
     texCoord: number,
   }
 
@@ -22,7 +21,6 @@ class PhotoShader extends Shader {
     }
 
     this.attribLocations = {
-      vertexPosition: this.attributeLocation('aVertexPosition'),
       texCoord: this.attributeLocation('aTexCoord'),
     }
   }
