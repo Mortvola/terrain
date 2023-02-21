@@ -65,18 +65,11 @@ class TriangleMesh implements RenderObjectInterface {
   //   );
   // }
 
-  createBuffer(
+  formatData(
     normals: number[],
     points: number[],
     indices: number[],
-    shader: TriangleMeshShader,
-  ): void {
-    const normalBuffer = this.gl.createBuffer();
-
-    if (normalBuffer === null) {
-      throw new Error('normalBuffer is null');
-    }
-
+  ): number[] {
     // Buffer for the vertex data (position, texture, normal, tangent)
     const buffer: number[] = [];
 
@@ -155,6 +148,17 @@ class TriangleMesh implements RenderObjectInterface {
       }
     }
 
+    return buffer;
+  }
+
+  createBuffer(
+    normals: number[],
+    points: number[],
+    indices: number[],
+    shader: TriangleMeshShader,
+  ): void {
+    const data = this.formatData(normals, points, indices);
+
     const buf = this.gl.createBuffer();
 
     if (buf === null) {
@@ -162,7 +166,7 @@ class TriangleMesh implements RenderObjectInterface {
     }
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buf);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(buffer), this.gl.STATIC_DRAW);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(data), this.gl.STATIC_DRAW);
     this.gl.enableVertexAttribArray(shader.vertexPosition);
     this.gl.vertexAttribPointer(
       shader.vertexPosition,

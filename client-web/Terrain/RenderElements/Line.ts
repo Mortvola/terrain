@@ -3,6 +3,7 @@ import Shader from "../Shaders/Shader";
 import RenderObjectInterface from "./RenderObject";
 
 const vertexStride = 3;
+const floatSize = 4;
 
 class Line implements RenderObjectInterface {
   gl: WebGL2RenderingContext;
@@ -45,7 +46,7 @@ class Line implements RenderObjectInterface {
       3, // Number of components
       this.gl.FLOAT,
       false, // normalize
-      vertexStride * 4, // stride
+      vertexStride * floatSize, // stride
       0, // offset
     );
   }

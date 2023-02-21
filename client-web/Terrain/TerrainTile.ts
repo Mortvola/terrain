@@ -10,6 +10,7 @@ import TriangleMesh from './RenderElements/TriangleMesh';
 import RenderObjectInterface from './RenderElements/RenderObject';
 import Line from './RenderElements/Line';
 import LineShader from './Shaders/LineShader';
+import Normals from './RenderElements/Normals';
 
 type TerrainData = {
   xDimension: number,
@@ -124,16 +125,29 @@ class TerrainTile {
       this.yDimension = data.yDimension;
       this.elevation = data.elevation;
       // this.initBuffers(data, shader);
+
+      const normals: Normals[] = [];
+  
       this.objects = data.objects.map((object) => {
         switch (object.type) {
           case 'triangles':
-            return new TriangleMesh(
+            const mesh = new TriangleMesh(
               this.gl,
               object.points,
               object.normals,
               object.indices,
               shader,
             );
+
+            // normals.push(new Normals(
+            //   this.gl,
+            //   object.points,
+            //   object.normals,
+            //   object.indices,
+            //   lineShader,
+            // ));
+
+            return mesh;
           
           case 'line':
             return new Line(this.gl, object.points, lineShader);
@@ -142,6 +156,11 @@ class TerrainTile {
             throw new Error(`Unkonwn render type: ${object.type}`);
         }
       });
+
+      this.objects = [
+        ...this.objects,
+        ...normals,
+      ]
     }
   }
 
