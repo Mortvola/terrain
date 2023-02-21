@@ -292,7 +292,7 @@ class ElevationsToTerrainTile {
         points,
         centers,
         textureNE: { s: 0, t: 0},
-        textureSW: { s: 1, t: 1}
+        textureSW: { s: 128, t: 128}
       };
     }
     catch (error) {

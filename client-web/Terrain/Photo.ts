@@ -2,6 +2,7 @@ import { mat4, vec3 } from 'gl-matrix';
 import { degToRad } from '../utilities';
 import { PhotoInterface } from '../PhotoInterface';
 import PhotoShader from './Shaders/PhotoShader';
+import { loaddImage } from './Texture';
 
 type Data = {
   points: number[],
@@ -63,30 +64,21 @@ class Photo {
     this.loadPhoto(`${photoUrl}/${this.photoData.id}`);
   }
 
-  loadPhoto(photoUrl: string): Promise<void> {
+  async loadPhoto(photoUrl: string): Promise<void> {
     if (this.texture === null) {
-      return new Promise((resolve) => {
-        this.image.onload = () => {
-          if (this === null || this.gl === null) {
-            throw new Error('this or this.gl is null');
-          }
+      const image = await loaddImage(photoUrl);
 
-          this.data = this.initData(this.image.width, this.image.height);
+      this.data = this.initData(image.width, image.height);
 
-          this.vao = this.gl.createVertexArray();
+      this.vao = this.gl.createVertexArray();
 
-          this.gl.bindVertexArray(this.vao);
-          this.initBuffers();
-          this.initTexture(this.image);
-          this.gl.bindVertexArray(null);
+      this.gl.bindVertexArray(this.vao);
+      this.initBuffers();
+      this.initTexture(image);
+      this.gl.bindVertexArray(null);
 
-          this.onPhotoLoaded();
+      this.onPhotoLoaded();
 
-          resolve();
-        };
-
-        this.image.src = photoUrl;
-      });
     }
 
     return Promise.resolve();

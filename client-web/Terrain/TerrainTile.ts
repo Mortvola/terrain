@@ -50,13 +50,7 @@ class TerrainTile {
 
   renderer: TerrainRendererInterface;
 
-  // vao: WebGLVertexArrayObject | null;
-
   gl: WebGL2RenderingContext;
-
-  // texture: WebGLTexture | null = null;
-
-  // numIndices = 0;
 
   elevation: number[][] = [];
 

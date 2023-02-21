@@ -1,8 +1,9 @@
 #version 300 es
 
-in vec4 aVertexPosition;
+in vec3 aVertexPosition;
 in vec2 aTexCoord;
 in vec3 aVertexNormal;
+in vec3 aTangent;
 
 layout (std140) uniform Matrices
 {
@@ -12,15 +13,19 @@ layout (std140) uniform Matrices
 uniform highp mat4 uModelMatrix;
 uniform highp vec3 uLightVector;
 
-out highp float fLighting;
-out highp vec2 vTexCoord;
-out highp vec3 vPosition;
+out highp vec2 fsTexCoords;
+out highp vec3 fsTangentLightVector;
 
 void main() {
-  highp vec4 position = view * uModelMatrix * aVertexPosition;
+  gl_Position = projection * view * uModelMatrix * vec4(aVertexPosition, 1.0);;
 
-  gl_Position = projection * position;
-  fLighting = 1.0 + min(dot(aVertexNormal, uLightVector), 0.0);
-  vTexCoord = aTexCoord;
-  vPosition = position.xyz;
+  mat3 normalMatrix = transpose(inverse(mat3(uModelMatrix)));
+  vec3 T = normalize(normalMatrix * aTangent);
+  vec3 N = normalize(normalMatrix * aVertexNormal);
+  T = normalize(T - dot(T, N) * N);
+  vec3 B = cross(N, T);
+  
+  mat3 TBN = transpose(mat3(T, B, N));
+  fsTangentLightVector = TBN * normalize(-uLightVector);
+  fsTexCoords = aTexCoord;
 }

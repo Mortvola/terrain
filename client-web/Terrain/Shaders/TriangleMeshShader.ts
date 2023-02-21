@@ -4,6 +4,7 @@ class TriangleMeshShader extends Shader {
   attribLocations: {
     texCoord: number,
     vertexNormal: number,
+    tangent: number,
   }
 
   constructor (gl: WebGL2RenderingContext, vertexShdaderCode: string, fragmentShaderCode: string) {
@@ -12,6 +13,7 @@ class TriangleMeshShader extends Shader {
     this.attribLocations = {
       texCoord: this.attributeLocation('aTexCoord'),
       vertexNormal: this.attributeLocation('aVertexNormal'),
+      tangent: this.attributeLocation('aTangent'),
     }
   }
 }

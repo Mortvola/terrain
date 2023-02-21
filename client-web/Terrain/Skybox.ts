@@ -1,5 +1,5 @@
-import { mat3, mat4, quat } from "gl-matrix";
 import SkyboxShader from "./Shaders/SkyboxShader";
+import { loaddImage } from "./Texture";
 
 class Skybox {
   gl: WebGL2RenderingContext
@@ -70,7 +70,7 @@ class Skybox {
 
     this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.texture);
 
-    await Promise.all(faces.map((face) => this.loadImage(face.file, face.face)));
+    await Promise.all(faces.map((face) => this.loadTexture(face.file, face.face)));
 
     this.gl.texParameteri(this.gl.TEXTURE_CUBE_MAP, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
     this.gl.texParameteri(this.gl.TEXTURE_CUBE_MAP, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
@@ -79,45 +79,25 @@ class Skybox {
     this.gl.texParameteri(this.gl.TEXTURE_CUBE_MAP, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
   }
 
-  loadImage(file: string, face: GLenum): Promise<void> {
-    return new Promise((resolve) => {
-      const image = new Image();
+  async loadTexture(file: string, face: GLenum): Promise<void> {
+    const image = await loaddImage(`/${file}`);
 
-      image.onload = () => {
-        if (this === null || this.gl === null) {
-          throw new Error('this or this.gl is null');
-        }
+    const level = 0;
+    const internalFormat = this.gl.RGB;
+    const srcFormat = this.gl.RGB;
+    const srcType = this.gl.UNSIGNED_BYTE;
 
-        // this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, this.texture);
-
-        const level = 0;
-        const internalFormat = this.gl.RGB;
-        const srcFormat = this.gl.RGB;
-        const srcType = this.gl.UNSIGNED_BYTE;
-    
-        this.gl.texImage2D(
-          face,
-          level,
-          internalFormat,
-          image.width,
-          image.height,
-          0,
-          srcFormat,
-          srcType,
-          image,
-        );
-
-        // this.gl.generateMipmap(this.gl.TEXTURE_2D);
-    
-        // this.gl.texImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
-        //   0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-        // );
-    
-        resolve();
-      };
-
-      image.src = `/${file}`;
-    });
+    this.gl.texImage2D(
+      face,
+      level,
+      internalFormat,
+      image.width,
+      image.height,
+      0,
+      srcFormat,
+      srcType,
+      image,
+    );
   }
 }
 

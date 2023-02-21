@@ -11,6 +11,7 @@ import { PhotoInterface } from '../PhotoInterface';
 import Skybox from './Skybox';
 import SkyboxShader from './Shaders/SkyboxShader';
 import LineShader from './Shaders/LineShader';
+import { loaddImage } from './Texture';
 
 type Tile = {
   offset: { x: number, y: number},
@@ -107,6 +108,8 @@ class TerrainRenderer implements TerrainRendererInterface {
 
   skybox: Skybox;
 
+  bumpMap: WebGLTexture | null = null;
+
   constructor(
     gl: WebGL2RenderingContext,
     position: LatLng,
@@ -145,6 +148,8 @@ class TerrainRenderer implements TerrainRendererInterface {
 
     this.skybox = new Skybox(this.gl, this.skyboxShader);
 
+    this.loadBumpMap();
+  
     this.initialize();
   }
 
@@ -647,6 +652,9 @@ class TerrainRenderer implements TerrainRendererInterface {
       const lightVector = vec3.fromValues(0, -1, -1);
       vec3.normalize(lightVector, lightVector);
 
+      this.gl.activeTexture(this.gl.TEXTURE0);
+      this.gl.bindTexture(this.gl.TEXTURE_2D, this.bumpMap);
+            
       if (!showMesh) {
         this.tileRenderOrder.forEach((order) => {
           const { tile, offset } = this.tileGrid[order.y][order.x];
@@ -660,7 +668,7 @@ class TerrainRenderer implements TerrainRendererInterface {
 
             this.terrainShader.use();
             this.terrainShader.setLightVector(lightVector);
-            this.terrainShader.setFog(this.fogColor, this.fogNormalizationFactor)
+            this.terrainShader.setNormalMap(0);
 
             tile.draw(modelMatrix);
           }
@@ -673,7 +681,6 @@ class TerrainRenderer implements TerrainRendererInterface {
           if (tile) {
             this.terrainShader.use();
             this.terrainShader.setLightVector(lightVector);
-            this.terrainShader.setFog(this.fogColor, this.fogNormalizationFactor)
 
             const modelMatrix = this.getModelMatrix(
               offset.x,
@@ -819,6 +826,41 @@ class TerrainRenderer implements TerrainRendererInterface {
   //     });
   //   });
   // }
+
+  async loadBumpMap(): Promise<void> {
+    const image = await loaddImage('/test.png');
+
+    this.bumpMap = this.gl.createTexture();
+    if (this.bumpMap === null) {
+      throw new Error('this.texture is null');
+    }
+
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.bumpMap);
+
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_LINEAR);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+
+    const level = 0;
+    const internalFormat = this.gl.RGBA;
+    const srcFormat = this.gl.RGBA;
+    const srcType = this.gl.UNSIGNED_BYTE;
+
+    this.gl.texImage2D(
+      this.gl.TEXTURE_2D,
+      level,
+      internalFormat,
+      image.width,
+      image.height,
+      0,
+      srcFormat,
+      srcType,
+      image,
+    );
+
+    this.gl.generateMipmap(this.gl.TEXTURE_2D);
+  }
 }
 
 export default TerrainRenderer;

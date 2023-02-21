@@ -5,9 +5,8 @@ import TriangleMeshShader from './TriangleMeshShader';
 
 class TerrainShader extends TriangleMeshShader {
   uniformLocations: {
-    fogColor: WebGLUniformLocation,
-    fogNormalizationFactor: WebGLUniformLocation,
     lightVector: WebGLUniformLocation,
+    normalMap: WebGLUniformLocation,
   }
 
   constructor(gl:WebGL2RenderingContext) {
@@ -16,9 +15,8 @@ class TerrainShader extends TriangleMeshShader {
     this.bindMatricesUniformLocation();
 
     this.uniformLocations = {
-      fogColor: this.uniformLocation('uFogColor'),
-      fogNormalizationFactor: this.uniformLocation('uFogNormalizationFactor'),
       lightVector: this.uniformLocation('uLightVector'),
+      normalMap: this.uniformLocation('normalMap'),
     }
   }
 
@@ -26,11 +24,8 @@ class TerrainShader extends TriangleMeshShader {
     this.gl.uniform3fv(this.uniformLocations.lightVector, lightVector);
   }
 
-  setFog(color: vec4, normalizationFactor: number) {
-    this.gl.uniform4fv(this.uniformLocations.fogColor, [1.0, 1.0, 1.0, 1.0]);
-    this.gl.uniform1f(
-      this.uniformLocations.fogNormalizationFactor, normalizationFactor,
-    );
+  setNormalMap(id: number) {
+    this.gl.uniform1i(this.uniformLocations.normalMap, id);
   }
 }
 
